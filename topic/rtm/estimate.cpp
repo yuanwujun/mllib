@@ -11,7 +11,7 @@ DEFINE_string(net_path, "rtm_corpus", "");
 DEFINE_int32(topic_num, 10, "");
 DEFINE_double(alpha, 0.01, "");
 
-void App() 
+int main(int argc, char* argv[]) 
 {
   long t1;
   (void) time(&t1);
@@ -32,10 +32,6 @@ void App()
   ReadData(FLAGS_net_path, &test);
   RTM rtm(FLAGS_topic_num, FLAGS_alpha);
   var.RunEM(test, &rtm);
-}
 
-int main(int argc, char* argv[]) 
-{
-  App();
   return 0; 
 }
