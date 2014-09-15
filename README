@@ -1,0 +1,9 @@
+1. how to install eigen
+   if you have downloaded and extracted Eigen to /home/username/eigen-eigen-5097c01bcdc4,
+   then you should create a new directory outside of the Eigen root altogether. I guess something like:
+
+   mkdir /home/username/build_eigen
+   cd /home/username/build_eigen
+   cmake /home/username/eigen-eigen-5097c01bcdc4
+   make
+   sudo make install

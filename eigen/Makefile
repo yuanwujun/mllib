@@ -1,3 +1,5 @@
+include ../ThirdLib.mk
+
 ##target lib###
 LIBS=libeigen.a
 DEST=../lib/eigen
@@ -8,7 +10,7 @@ CXXFLAGS=-D_DEBUG -g -static
 LDFLAGS=
 
 ##include dir and source dir##
-INCLUDE_DIRS=-I$(HOME)/lib/include -I$(HOME)/working/project/coderepos/thirdparty/Eigen -I../common/include
+INCLUDE_DIRS=-I$(GOOGLELIB) -I$(EIGEN) -I../common/include
 SRC_DIRS=.
 
 ##objects##

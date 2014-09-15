@@ -1,3 +1,5 @@
+include ../ThirdLib.mk
+
 ##target lib###
 LIBS=libcommon.a
 DEST=../lib/common
@@ -8,7 +10,7 @@ CXXFLAGS=-D_DEBUG -g -static
 LDFLAGS=
 
 ##include dir and source dir##
-INCLUDE_DIRS=-I./include -I$(HOME)/lib/include
+INCLUDE_DIRS=-I./include -I$(GOOGLELIB)
 SRC_DIRS=.
 
 ##objects##
@@ -29,4 +31,3 @@ $(OBJS):%.o:%.cpp
 
 clean:
 	rm -rf $(OBJS)
-
