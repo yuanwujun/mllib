@@ -1,10 +1,12 @@
+include ../../ThirdLib.mk
+
 PROGRAM=rtm
 cc=g++
 
 PUB_DIR=../../lib
 
-INCLUDES= ../../common/include -I../../eigen -I$(HOME)/lib/include -I$(HOME)/working/project/coderepos/thirdparty/Eigen
-LIB_PATH= $(PUB_DIR)/common -L$(HOME)/lib/lib -L$(PUB_DIR)/eigen
+INCLUDES= ../../common/include -I../../eigen -I$(GOOGLEINC) -I$(EIGEN)
+LIB_PATH= $(PUB_DIR)/common -L$(GOOGLELIB) -L$(PUB_DIR)/eigen
 
 SRC_DIRS=.
 

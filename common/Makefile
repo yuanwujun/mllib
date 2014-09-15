@@ -10,7 +10,7 @@ CXXFLAGS=-D_DEBUG -g -static
 LDFLAGS=
 
 ##include dir and source dir##
-INCLUDE_DIRS=-I./include -I$(GOOGLELIB)
+INCLUDE_DIRS=-I./include -I$(GOOGLEINC)
 SRC_DIRS=.
 
 ##objects##
