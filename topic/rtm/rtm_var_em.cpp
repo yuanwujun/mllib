@@ -9,6 +9,18 @@
 #include "rtm.h"
 
 namespace ml {
+void VarRTM::Init(float em_converged, int em_max_iter, int estimate_alpha,
+                                   int var_max_iter, int var_converged,
+                                   double initial_alpha, int n_topic) {
+  em_converged_ = em_converged;
+  em_max_iter_ = em_max_iter;
+  estimate_alpha_ = estimate_alpha;
+  initial_alpha_ = initial_alpha;
+  n_topic_ = n_topic;
+  var_converged_ = var_converged;
+  var_max_iter_ = var_max_iter;
+}
+
 double VarRTM::Likelihood(int d, RTMC &m, VecC &ga, Mat &phi) const {
   double g_sum = ga.sum();
   double digsum = DiGamma(g_sum);

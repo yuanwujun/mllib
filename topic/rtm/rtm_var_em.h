@@ -11,13 +11,15 @@
 namespace ml {
 class VarRTM {
  public:
+ 	void Init(float em_converged, int em_max_iter, int estimate_alpha,
+                   int var_max_iter, int var_converged_,
+                   double initial_alpha, int n_topic);
+                   
   double Likelihood(int d, RTMC &m, VecC &ga, Mat &phi) const;
   double Infer(int d, RTMC &m, Vec* ga, Mat* phi, Mat* z_bar) const;
   double Infer(RTMC &m, Mat* ga, VMat* phi) const;
  
-  inline void Init(float em_converged, int em_max_iter, int estimate_alpha,
-                   int var_max_iter, int var_converged_,
-                   double initial_alpha, int n_topic);
+
   void MStep(const RTMSuffStats &suff, RTM* m);
   void MaxEta(const Mat &z_bar, int rho, RTM* m) const;
   void RTMMStep(RTMSuffStatsC &ss, RTM* m);
@@ -44,16 +46,5 @@ class VarRTM {
   double lambda;
 };
 
-void VarRTM::Init(float em_converged, int em_max_iter, int estimate_alpha,
-                                   int var_max_iter, int var_converged,
-                                   double initial_alpha, int n_topic) {
-  em_converged_ = em_converged;
-  em_max_iter_ = em_max_iter;
-  estimate_alpha_ = estimate_alpha;
-  initial_alpha_ = initial_alpha;
-  n_topic_ = n_topic;
-  var_converged_ = var_converged;
-  var_max_iter_ = var_max_iter;
-}
 } // namespace ml
 #endif // ML_TOPIC_RTM_VAR_EM_H
