@@ -9,18 +9,6 @@
 #include "cokus.h"
 
 namespace ml {
-struct feature_node {
-	int index;
-	double value;
-};
-
-struct problem {
-	int l, n;
-	double *y;
-	struct feature_node **x;
-	double bias;            /* < 0 if no bias term */  
-};
-
 class VarRTM {
  public:
   double Likelihood(int d, RTMC &m, VecC &ga, Mat &phi) const;
