@@ -9,18 +9,6 @@
 #include "rtm.h"
 
 namespace ml {
-void VarRTM::Init(float em_converged, int em_max_iter, int estimate_alpha,
-                                   int var_max_iter, int var_converged,
-                                   double initial_alpha, int n_topic) {
-  em_converged_ = em_converged;
-  em_max_iter_ = em_max_iter;
-  estimate_alpha_ = estimate_alpha;
-  initial_alpha_ = initial_alpha;
-  n_topic_ = n_topic;
-  var_converged_ = var_converged;
-  var_max_iter_ = var_max_iter;
-}
-
 double VarRTM::Likelihood(int d, RTMC &m, VecC &ga, Mat &phi) const {
   double g_sum = ga.sum();
   double digsum = DiGamma(g_sum);
@@ -64,7 +52,7 @@ double VarRTM::EStep(int d, RTMC &m, Mat* z_bar, RTMSuffStats* ss) const {
   Mat phi(m.TopicNum(), cor.ULen(d)); 
   phi.setZero();
   Vec gamma;
-  double likelihood = Infer(d, m, &gamma, &phi, z_bar);
+  double likelihood = Infer(d, m, *z_bar, &gamma, &phi);
   for (size_t n = 0; n < cor.ULen(d); n++) {
     for (int k = 0; k < m.TopicNum(); k++) {
       ss->topic(k, cor.Word(d, n)) += cor.Count(d, n) * phi(k, n);
@@ -83,13 +71,6 @@ Vec VarRTM::ZBar(int doc_id, MatC &phi) const {
   }
   v /= cor.TLen(doc_id);
   return v;
-}
-
-void VarRTM::ZBar(VMatC &phi, Mat* m) const {
-  m->resize(phi[0].rows(), phi.size());
-  for (size_t i = 0; i < phi.size(); i++) {
-    m->col(i) = ZBar(i, phi[i]);
-  }
 }
 
 void VarRTM::RunEM(SpMat &test, RTM* m) {
@@ -124,20 +105,28 @@ void VarRTM::RunEM(SpMat &test, RTM* m) {
 phi: dimensions is doc_id, matrix is topic * doc_size 
 z_bar: topic*doc_id
 ****/
-double VarRTM::Infer(int d, RTMC &m, Vec* ga, Mat* phi, Mat* z_bar) const {
+//double VarRTM::Infer(int d, RTMC &m, Vec* ga, Mat* phi, Mat* z_bar) const {
+double VarRTM::Infer(int d, RTMC &m, MatC &z_bar, Vec* ga, Mat* phi) const {
   double likelihood_old = 0;
   double c = 1;
   Vec digamma;
   InitVar(d, m, &digamma, ga, phi);
+  Vec vec(m.TopicNum());  //allociate one time
   for(int it = 1; (c > var_converged_) && (it < var_max_iter_); ++it) {
-    Vec vec(m.TopicNum());
     vec.setZero();
     for (SpMatInIt it(net, d); it; ++it) {
-      vec += z_bar->col(it.index());
+      vec += z_bar.col(it.index());
     }
+
+    /*
+    for (SpMatInIt it(net, d); it; ++it) {
+      Vec pi = z_bar.col(d).cwiseProduct(z_bar.col(it.index()));
+      vec += (1 - Sigmoid(m.eta.dot(pi)))*pi;
+    }
+    */
     Vec gradient = vec.cwiseProduct(m.eta);
-    //for (size_t n = 0; n < cor.ULen(d); n++) {
-    for (size_t n = 0; n < 1; n++) {
+    gradient /= cor.TLen(d); //every word is considered to be different
+    for (size_t n = 0; n < cor.ULen(d); n++) {
       for (int k = 0; k < m.TopicNum(); k++) {
         (*phi)(k, n) = digamma[k] + m.ln_w(k, cor.Word(d, n)) + gradient[k];
       }
@@ -150,9 +139,12 @@ double VarRTM::Infer(int d, RTMC &m, Vec* ga, Mat* phi, Mat* z_bar) const {
     for (size_t n = 0; n < cor.ULen(d); n++) {
       for (int k = 0; k < m.TopicNum(); k++) {
         (*ga)[k] += cor.Count(d, n) * (*phi)(k, n);
-        digamma[k] = DiGamma((*ga)[k]);
       }
     }
+    for (int k = 0; k < m.TopicNum(); k++) {
+      digamma[k] = DiGamma((*ga)[k]);
+    }
+
     double likelihood = Likelihood(d, m, *ga, *phi);
     assert(!isnan(likelihood));
     c = (likelihood_old - likelihood) / likelihood_old;
@@ -201,7 +193,7 @@ double VarRTM::LinkPredict(const SpMat &test, RTMC &m, Mat &z_bar) const {
     Mat phi(m.TopicNum(), cor.Len()); 
     phi.setZero();
     Vec gamma(m.TopicNum());
-    Infer(i, m, &gamma, &phi, &z_bar);
+    Infer(i, m, z_bar, &gamma, &phi);
     for (SpMatInIt it(test, i); it; ++it) {
       Vec p = z_bar.col(i).cwiseProduct(z_bar.col(it.index()));
       rmse += Square(Sigmoid(p.dot(m.eta)));
