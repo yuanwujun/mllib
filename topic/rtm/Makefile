@@ -5,8 +5,8 @@ cc=g++
 
 PUB_DIR=../../lib
 
-INCLUDES= ../../common/include -I../../eigen -I$(GOOGLEINC) -I$(EIGEN)
-LIB_PATH= $(PUB_DIR)/common -L$(GOOGLELIB) -L$(PUB_DIR)/eigen
+INCLUDES= ../../common/include ../../liblinear -I../../eigen -I$(GOOGLEINC) -I$(EIGEN)
+LIB_PATH= $(PUB_DIR)/common $(PUB_DIR)/LinearModel -L$(GOOGLELIB) -L$(PUB_DIR)/eigen
 
 SRC_DIRS=.
 

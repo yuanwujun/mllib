@@ -8,6 +8,8 @@
 #include "eigen_util.h"
 #include "rtm.h"
 
+#include "linear.h"
+
 namespace ml {
 double VarRTM::Likelihood(int d, RTMC &m, VecC &ga, Mat &phi) const {
   double g_sum = ga.sum();
@@ -209,38 +211,75 @@ void VarRTM::Load(StrC &net_path, StrC &cor_path) {
 
 //p->n sample number, p->l feature number
 //topic num is alpha.size()
-//neg_num, negative sampling number
-void VarRTM::LiblinearInputData(VecC &alpha, int neg_num, problem* m) const {
-/*
-  p->n = net.nonZeros();
-  p->l += neg_num;
-  p->l = topic_num;
-  std::vector<Vec> feature;
-  for (int i = 0; i < net.cols(); i++) {
-    for (SpMatInIt it(net, i); it; ++it) {
-      feature.push_back(z_bar.col(i).cwiseProduct(z_bar.col(it.index())));
+void VarRTM::LiblinearInputData(VecC &alpha, const Mat &z_bar, Vec *eta) const {
+	int feature = alpha.size();
+	int non_zero_num_in_net = net.nonZeros();
+	int negative_sample_num = non_zero_num_in_net * rho;
+	int training_data_num = non_zero_num_in_net + negative_sample_num;
+	long elements = training_data_num * feature;
+	double negative_value_dim = 1.0 / (feature * feature);
+	
+	struct parameter param;
+	param.solver_type = L2R_LR;
+	param.C = 0;
+	param.eps = 0.01; // see setting below
+	param.p = 0.1;
+	param.nr_weight = 0;
+	param.weight_label = NULL;
+	param.weight = NULL;
+		
+	struct problem prob;
+	prob.l = training_data_num;
+	prob.bias = 0;
+	prob.y = (double)malloc(sizeof(double) * prob.l);
+	prob.x = (struct feature_node *)malloc(sizeof(struct feature_node *) * prob.l);
+	prob.n = feature;
+	
+	struct feature_node *x_space;
+	x_space = (feature_node *)malloc(sizeof(feature_node) * elements);
+	
+	
+	// load positive sample from net between documents.
+	int current_feature_node_index = 0;
+	int current_l = 0;
+	for (size_t d = 0; d < cor.Len(); d++) {
+		for (SpMatInIt it(net, d); it; ++it) {
+			Vec pi = z_bar.col(d).cwiseProduct(z_bar.col(it.index()));
+			
+			prob.y[current_l] = 1;
+			prob.x[current_l] = &x_space[current_feature_node_index];
+			for (int i = 0;i < feature;++i) {
+				x_space[current_feature_node_index].index = i;
+				x_space[current_feature_node_index].value = pi(i);
+				current_feature_node_index ++;
+			}
+			current_l ++;
     }
   }
-  for (size_t i = 0; i < feature.size(); i++) {
-    for (int j = 0; j < feature[i].size(); j++) {
-      m->x[i].index = j;
-      m->x[i].value = feature[i][j];
-    }
-    m->y[i] = 1;
+  
+  // construct negative sample from Dirichlet prior of the model.
+  for(int neg_i = 0;neg_i < negative_sample_num;++neg_i) {
+  	prob.y[current_l] = -1;
+  	prob.x[current_l] = &x_space[current_feature_node_index];
+  	for(int i = 0;i < feature;++i) {
+  		x_space[current_feature_node_index].index = i;
+			x_space[current_feature_node_index].value = negative_value_dim;
+			current_feature_node_index ++;
+  	}
   }
-  // add negative sample, regularization
-  Vec a = alpha / alpha.sum();
-  a = a.cwiseProduct(a);
-  for (size_t i = feature.size(); i < p->n; i++) {
-    for (int j = 0; j < topic_num; j++) {
-      m->x[i].index = j;
-      m->x[i].value = a[i][j];
-    }
+  
+  struct model* solver=train(&prob, &param);
+  for (int i = 0;i < feature;++i) {
+  	(*eta)[i] = solver->w[i];
   }
-  // add negative sample, sampling 
-  for (size_t i = feature.size(); i < p->n; i++) {
-
-  }
-*/
+  
+  free(solver->w);
+  free(solver->label);
+  free(solver);
+  free(prob.y);
+	free(prob.x);
+	free(x_space);
+	free(param->weight_label);
+	free(param->weight);
 }
 } // namespace ml 
