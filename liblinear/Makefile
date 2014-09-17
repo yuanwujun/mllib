@@ -1,11 +1,11 @@
 CXX ?= g++
 CC ?= gcc
-CFLAGS = -Wall -Wconversion -O3 -fPIC -static
+CFLAGS = -Wall -static
 
 LIBS=liblinear.a
 DEST=../lib/LinearModel
 
-$(LIBS):tron.o linear.o blas/blas.a
+$(LIBS):tron.o linear.o dnrm2.o daxpy.o ddot.o dscal.o
 	-@if [ ! -d ${DEST} ]; then mkdir -p ${DEST}; fi
 	ar r $(DEST)/$@ $^
 
@@ -15,9 +15,17 @@ tron.o: tron.cpp tron.h
 linear.o: linear.cpp linear.h
 	$(CXX) $(CFLAGS) -c -o linear.o linear.cpp
 
-blas/blas.a: blas/*.c blas/*.h
-	make -C blas OPTFLAGS='$(CFLAGS)' CC='$(CC)';
+dnrm2.o: dnrm2.c blas.h blasp.h
+	$(CC) $(CFLAGS) -c -o dnrm2.o dnrm2.c
+
+daxpy.o: daxpy.c blas.h blasp.h
+	$(CC) $(CFLAGS) -c -o daxpy.o daxpy.c
+
+ddot.o: ddot.c blas.h blasp.h
+	$(CC) $(CFLAGS) -c -o ddot.o ddot.c
+
+dscal.o: dscal.c blas.h blasp.h
+	$(CC) $(CFLAGS) -c -o dscal.o dscal.c
 
 clean:
-	make -C blas clean
-	rm -f *~ tron.o linear.o
+	rm -f *~ *.o linear.o
