@@ -231,8 +231,8 @@ void VarRTM::LiblinearInputData(VecC &alpha, const Mat &z_bar, Vec *eta) const {
 	struct problem prob;
 	prob.l = training_data_num;
 	prob.bias = 0;
-	prob.y = (double)malloc(sizeof(double) * prob.l);
-	prob.x = (struct feature_node *)malloc(sizeof(struct feature_node *) * prob.l);
+	prob.y = (double*)malloc(sizeof(double) * prob.l);
+	prob.x = (struct feature_node **)malloc(sizeof(struct feature_node *) * prob.l);
 	prob.n = feature;
 	
 	struct feature_node *x_space;
@@ -277,9 +277,7 @@ void VarRTM::LiblinearInputData(VecC &alpha, const Mat &z_bar, Vec *eta) const {
   free(solver->label);
   free(solver);
   free(prob.y);
-	free(prob.x);
-	free(x_space);
-	free(param->weight_label);
-	free(param->weight);
+  free(prob.x);
+  free(x_space);
 }
 } // namespace ml 

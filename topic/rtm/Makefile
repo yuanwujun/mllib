@@ -5,14 +5,14 @@ cc=g++
 
 PUB_DIR=../../lib
 
-INCLUDES= ../../common/include ../../liblinear -I../../eigen -I$(GOOGLEINC) -I$(EIGEN)
-LIB_PATH= $(PUB_DIR)/common $(PUB_DIR)/LinearModel -L$(GOOGLELIB) -L$(PUB_DIR)/eigen
+INCLUDES= ../../common/include -I../../liblinear -I../../eigen -I$(GOOGLEINC) -I$(EIGEN)
+LIB_PATH= $(PUB_DIR)/common -L$(PUB_DIR)/LinearModel -L$(GOOGLELIB) -L$(PUB_DIR)/eigen
 
 SRC_DIRS=.
 
 SRC=$(wildcard $(SRC_DIRS)/*.cpp)
 OBJS=$(patsubst %.cpp,%.o,$(SRC))
-LIBS= -lpthread -lgflags -lglog -leigen -lcommon
+LIBS= -lpthread -lgflags -lglog -leigen -lcommon -llinear
 
 CXXFLAGS=-Wall
 
