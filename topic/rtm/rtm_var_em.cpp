@@ -92,10 +92,10 @@ void VarRTM::RunEM(SpMat &test, RTM* m) {
       likelihood += EStep(d, *m, &z_bar, &ss);
     }
     MStep(ss, m);
-    MaxEta(z_bar, rho, m);
+//    MaxEta(z_bar, rho, m);
     Vec alpha(m->topic_num);
     LOG(INFO) << "liblinear";
-    //LiblinearInputData(alpha, z_bar, &(m->eta));
+    LiblinearInputData(alpha, z_bar, &(m->eta));
     LOG(INFO) << "liblinear";
     converged = (likelihood_old - likelihood) / (likelihood_old);
     if (converged < 0) {
@@ -221,46 +221,47 @@ void VarRTM::Load(StrC &net_path, StrC &cor_path) {
 void VarRTM::LiblinearInputData(VecC &alpha, const Mat &z_bar, Vec *eta) const {
   int feature = alpha.size();
   int non_zero_num_in_net = net.nonZeros();
-  int negative_sample_num = non_zero_num_in_net * rho;
-	int training_data_num = non_zero_num_in_net + negative_sample_num;
-	long elements = training_data_num * feature;
-	double negative_value_dim = 1.0 / (feature * feature);
+  int negative_sample_num = non_zero_num_in_net * rho_;
+  int training_data_num = non_zero_num_in_net + negative_sample_num;
+  long elements = training_data_num * feature + training_data_num;
+  double negative_value_dim = 1.0 / (feature * feature);
 	
-	struct parameter param;
-	param.solver_type = L2R_LR;
-	param.C = 0;
-	param.eps = 0.01; // see setting below
-	param.p = 0.1;
-	param.nr_weight = 0;
-	param.weight_label = NULL;
-	param.weight = NULL;
+  struct parameter param;
+  param.solver_type = L2R_LR;
+  param.C = 0;
+  param.eps = 0.01; // see setting below
+  param.p = 0.1;
+  param.nr_weight = 0;
+  param.weight_label = NULL;
+  param.weight = NULL;
 		
-	struct problem prob;
-	prob.l = training_data_num;
-	prob.bias = 0;
-	prob.y = (double*)malloc(sizeof(double) * prob.l);
-	prob.x = (struct feature_node **)malloc(sizeof(struct feature_node *) * prob.l);
-	prob.n = feature;
+  struct problem prob;
+  prob.l = training_data_num;
+  prob.bias = -1;
+  prob.y = (double*)malloc(sizeof(double) * prob.l);
+  prob.x = (struct feature_node **)malloc(sizeof(struct feature_node *) * prob.l);
+  prob.n = feature;
 	
-	struct feature_node *x_space;
-	x_space = (feature_node *)malloc(sizeof(feature_node) * elements);
+  struct feature_node *x_space;
+  x_space = (feature_node *)malloc(sizeof(feature_node) * elements);
 	
 	
-	// load positive sample from net between documents.
-	int current_feature_node_index = 0;
-	int current_l = 0;
-	for (size_t d = 0; d < cor.Len(); d++) {
-		for (SpMatInIt it(net, d); it; ++it) {
-			Vec pi = z_bar.col(d).cwiseProduct(z_bar.col(it.index()));
+  // load positive sample from net between documents.
+  int current_feature_node_index = 0;
+  int current_l = 0;
+  for (size_t d = 0; d < cor.Len(); d++) {
+    for (SpMatInIt it(net, d); it; ++it) {
+      Vec pi = z_bar.col(d).cwiseProduct(z_bar.col(it.index()));
 			
-			prob.y[current_l] = 1;
-			prob.x[current_l] = &x_space[current_feature_node_index];
-			for (int i = 0;i < feature;++i) {
-				x_space[current_feature_node_index].index = i;
-				x_space[current_feature_node_index].value = pi(i);
-				current_feature_node_index ++;
-			}
-			current_l ++;
+      prob.y[current_l] = 1;
+      prob.x[current_l] = &x_space[current_feature_node_index];
+      for (int i = 0;i < feature;++i) {
+        x_space[current_feature_node_index].index = i;
+        x_space[current_feature_node_index].value = pi(i);
+        current_feature_node_index ++;
+      }
+      x_space[current_feature_node_index++].index = -1;
+      current_l ++;
     }
   }
   
@@ -270,9 +271,11 @@ void VarRTM::LiblinearInputData(VecC &alpha, const Mat &z_bar, Vec *eta) const {
   	prob.x[current_l] = &x_space[current_feature_node_index];
   	for(int i = 0;i < feature;++i) {
   		x_space[current_feature_node_index].index = i;
-			x_space[current_feature_node_index].value = negative_value_dim;
-			current_feature_node_index ++;
+		x_space[current_feature_node_index].value = negative_value_dim;
+		current_feature_node_index ++;
   	}
+    x_space[current_feature_node_index++].index = -1;
+    current_l ++;
   }
   
   struct model* solver=train(&prob, &param);

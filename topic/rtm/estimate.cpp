@@ -6,8 +6,8 @@
 
 using namespace ml;
 
-DEFINE_string(cor_path, "rtm_corpus", "");
-DEFINE_string(net_path, "rtm_network", "");
+DEFINE_string(cor_path, "./data/rtm_corpus", "");
+DEFINE_string(net_path, "./data/rtm_network", "");
 DEFINE_int32(topic_num, 10, "");
 DEFINE_double(alpha, 0.01, "");
 
@@ -25,11 +25,10 @@ int main(int argc, char* argv[])  {
   VarRTM var;
 
   var.Init(em_converged, em_max_iter, em_estimate_alpha, var_max_iter,
-                         var_converged, initial_alpha, FLAGS_topic_num);
+                         var_converged, initial_alpha, FLAGS_topic_num,1);
   LOG(INFO) << FLAGS_net_path;
   LOG(INFO) << FLAGS_cor_path;
   var.Load(FLAGS_net_path, FLAGS_cor_path);
-  LOG(INFO) << "hello";
   
   SpMat test;
   ReadData(FLAGS_net_path, &test);

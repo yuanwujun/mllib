@@ -18,7 +18,7 @@ class VarRTM {
  
   inline void Init(float em_converged, int em_max_iter, int estimate_alpha,
                    int var_max_iter, int var_converged_,
-                   double initial_alpha, int n_topic);
+                   double initial_alpha, int n_topic,int rho);
   void MStep(const RTMSuffStats &suff, RTM* m);
   void MaxEta(const Mat &z_bar, int rho, RTM* m) const;
   void LiblinearInputData(VecC &alpha, const Mat &z_bar, Vec *eta) const;
@@ -37,7 +37,7 @@ class VarRTM {
   int var_max_iter_;
   int n_topic_;
   int var_converged_;
-  int rho;
+  int rho_;
   Corpus cor;
   SpMat net;
   double lambda;
@@ -45,7 +45,7 @@ class VarRTM {
 
 void VarRTM::Init(float em_converged, int em_max_iter, int estimate_alpha,
                                    int var_max_iter, int var_converged,
-                                   double initial_alpha, int n_topic) {
+                                   double initial_alpha, int n_topic,int rho) {
   em_converged_ = em_converged;
   em_max_iter_ = em_max_iter;
   estimate_alpha_ = estimate_alpha;
@@ -53,6 +53,7 @@ void VarRTM::Init(float em_converged, int em_max_iter, int estimate_alpha,
   n_topic_ = n_topic;
   var_converged_ = var_converged;
   var_max_iter_ = var_max_iter;
+  rho_ = rho;
 }
 } // namespace ml
 #endif // ML_TOPIC_RTM_VAR_EM_H
