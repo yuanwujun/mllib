@@ -93,6 +93,10 @@ void VarRTM::RunEM(SpMat &test, RTM* m) {
     }
     MStep(ss, m);
     MaxEta(z_bar, rho, m);
+    Vec alpha(m->topic_num);
+    LOG(INFO) << "liblinear";
+    //LiblinearInputData(alpha, z_bar, &(m->eta));
+    LOG(INFO) << "liblinear";
     converged = (likelihood_old - likelihood) / (likelihood_old);
     if (converged < 0) {
       var_max_iter_ = var_max_iter_ * 2;
@@ -116,16 +120,16 @@ double VarRTM::Infer(int d, RTMC &m, MatC &z_bar, Vec* ga, Mat* phi) const {
   Vec vec(m.TopicNum());  //allociate one time
   for(int it = 1; (c > var_converged_) && (it < var_max_iter_); ++it) {
     vec.setZero();
+    /*
     for (SpMatInIt it(net, d); it; ++it) {
       vec += z_bar.col(it.index());
     }
+    */
 
-    /*
     for (SpMatInIt it(net, d); it; ++it) {
       Vec pi = z_bar.col(d).cwiseProduct(z_bar.col(it.index()));
-      vec += (1 - Sigmoid(m.eta.dot(pi)))*pi;
+      vec += (1 - Sigmoid(m.eta.dot(pi)))*z_bar.col(it.index());
     }
-    */
     Vec gradient = vec.cwiseProduct(m.eta);
     gradient /= cor.TLen(d); //every word is considered to be different
     for (size_t n = 0; n < cor.ULen(d); n++) {
@@ -198,7 +202,7 @@ double VarRTM::LinkPredict(const SpMat &test, RTMC &m, Mat &z_bar) const {
     Infer(i, m, z_bar, &gamma, &phi);
     for (SpMatInIt it(test, i); it; ++it) {
       Vec p = z_bar.col(i).cwiseProduct(z_bar.col(it.index()));
-      rmse += Square(Sigmoid(p.dot(m.eta)));
+      rmse += Square(1 - Sigmoid(p.dot(m.eta)));
     }
   }
   return std::sqrt(rmse/ test.nonZeros());
@@ -207,14 +211,17 @@ double VarRTM::LinkPredict(const SpMat &test, RTMC &m, Mat &z_bar) const {
 void VarRTM::Load(StrC &net_path, StrC &cor_path) {
   ReadData(net_path, &net);
   cor.LoadData(cor_path);
+  LOG(INFO) << cor_path;
+  LOG(INFO) << cor.Len();
+  LOG(INFO) << net.size();
 }
 
 //p->n sample number, p->l feature number
 //topic num is alpha.size()
 void VarRTM::LiblinearInputData(VecC &alpha, const Mat &z_bar, Vec *eta) const {
-	int feature = alpha.size();
-	int non_zero_num_in_net = net.nonZeros();
-	int negative_sample_num = non_zero_num_in_net * rho;
+  int feature = alpha.size();
+  int non_zero_num_in_net = net.nonZeros();
+  int negative_sample_num = non_zero_num_in_net * rho;
 	int training_data_num = non_zero_num_in_net + negative_sample_num;
 	long elements = training_data_num * feature;
 	double negative_value_dim = 1.0 / (feature * feature);
