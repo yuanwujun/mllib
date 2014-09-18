@@ -228,7 +228,7 @@ void VarRTM::LiblinearInputData(VecC &alpha, const Mat &z_bar, Vec *eta) const {
 	
   struct parameter param;
   param.solver_type = L2R_LR;
-  param.C = 0;
+  param.C = 1;
   param.eps = 0.01; // see setting below
   param.p = 0.1;
   param.nr_weight = 0;
@@ -245,7 +245,6 @@ void VarRTM::LiblinearInputData(VecC &alpha, const Mat &z_bar, Vec *eta) const {
   struct feature_node *x_space;
   x_space = (feature_node *)malloc(sizeof(feature_node) * elements);
 	
-	
   // load positive sample from net between documents.
   int current_feature_node_index = 0;
   int current_l = 0;
@@ -256,7 +255,7 @@ void VarRTM::LiblinearInputData(VecC &alpha, const Mat &z_bar, Vec *eta) const {
       prob.y[current_l] = 1;
       prob.x[current_l] = &x_space[current_feature_node_index];
       for (int i = 0;i < feature;++i) {
-        x_space[current_feature_node_index].index = i;
+        x_space[current_feature_node_index].index = i+1;
         x_space[current_feature_node_index].value = pi(i);
         current_feature_node_index ++;
       }
@@ -270,7 +269,7 @@ void VarRTM::LiblinearInputData(VecC &alpha, const Mat &z_bar, Vec *eta) const {
   	prob.y[current_l] = -1;
   	prob.x[current_l] = &x_space[current_feature_node_index];
   	for(int i = 0;i < feature;++i) {
-  		x_space[current_feature_node_index].index = i;
+  		x_space[current_feature_node_index].index = i+1;
 		x_space[current_feature_node_index].value = negative_value_dim;
 		current_feature_node_index ++;
   	}
