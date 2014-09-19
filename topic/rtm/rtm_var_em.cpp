@@ -218,7 +218,7 @@ void VarRTM::Load(StrC &net_path, StrC &cor_path) {
 
 //p->n sample number, p->l feature number
 //topic num is alpha.size()
-void VarRTM::LiblinearInputData(VecC &alpha, const Mat &z_bar, Vec *eta) const {
+void VarRTM::LearningEtaBySGD(VecC &alpha, const Mat &z_bar, Vec *eta) const {
   int feature = alpha.size();
   int non_zero_num_in_net = net.nonZeros();
   int negative_sample_num = non_zero_num_in_net * rho_;
