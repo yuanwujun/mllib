@@ -102,12 +102,11 @@ double LDA::DocEStep(const Corpus &cor, int d, const LdaModel &m, LdaSuffStats* 
   double gamma_sum = 0;
   for (int k = 0; k < m.num_topics; k++) {
     gamma_sum += gamma[k];
-//    ss->alpha_suffstats[k] += DiGamma(gamma[k]);
   }
   for (int k = 0; k < m.num_topics; k++) {
     ss->alpha_suffstats[k] += DiGamma(gamma[k]) - DiGamma(gamma_sum);
   }
-//  ss->alpha_suffstats -= m.num_topics * DiGamma(gamma_sum);
+
   for (size_t n = 0; n < cor.ULen(d); n++) {
     for (int k = 0; k < m.num_topics; k++) {
       ss->class_word[k][cor.Word(d, n)] += cor.Count(d, n) * phi[n][k];

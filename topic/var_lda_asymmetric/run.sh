@@ -10,7 +10,7 @@ cmd="
   "
 
 gdb="
-  gdb ./rtm
+  gdb ./var_lda
   "
 #exec $gdb
 exec $cmd

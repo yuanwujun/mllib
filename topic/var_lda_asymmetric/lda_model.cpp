@@ -56,6 +56,8 @@ double OptAlpha(const LdaSuffStats &ss, LdaModel* m) {
   double* gradient = new double[m->num_topics];
   double* matrix_diag = new double[m->num_topics];
   do {
+    iter++;
+
     DAlhood(ss,m,gradient);
     double non_diag = D2Alhood(m->alpha,ss.num_docs,m->num_topics,matrix_diag);
     
