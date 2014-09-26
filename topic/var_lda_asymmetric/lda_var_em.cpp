@@ -9,8 +9,7 @@
 #include "lda.h"
 
 namespace ml {
-void LDA::Init(float em_converged, int em_max_iter, int estimate_alpha,
-                int var_max_iter, int var_converged) {
+void LDA::Init(float em_converged, int em_max_iter, int estimate_alpha,int var_max_iter, int var_converged) {
   em_converged_ = em_converged;
   em_max_iter_ = em_max_iter;
   estimate_alpha_ = estimate_alpha;
@@ -119,7 +118,6 @@ double LDA::DocEStep(const Corpus &cor, int d, const LdaModel &m, LdaSuffStats* 
  
 void LDA::RunEM(const Str &type, CorpusC &train, CorpusC &test, LdaModel* m) {
   LdaSuffStats ss(*m);
-
   if (type == "seeded") {
     ss.CorpusInitSS(train, *m);
   } else if (type == "random") {
