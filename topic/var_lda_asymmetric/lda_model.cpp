@@ -27,7 +27,7 @@ double Alhood(const LdaSuffStats &ss, LdaModel* m) {
   double alpha_component_sufficient_product = 0.0;
   for(int k=0; k<m->num_topics; ++k) {
     log_gamma_alpha_component += lgamma(m->alpha[k]);
-    alpha_component_sufficient_product += m->alpha[k] * ss.alpha_suffstats[k];
+    alpha_component_sufficient_product += ( m->alpha[k] - 1 ) * ss.alpha_suffstats[k];
   }
   return (ss.num_docs * lgamma(alpha_sum) -  ss.num_docs * log_gamma_alpha_component + alpha_component_sufficient_product);
 }
