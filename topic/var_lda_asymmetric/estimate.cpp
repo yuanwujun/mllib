@@ -16,7 +16,7 @@ int main(int argc, char* argv[]) {
   int em_estimate_alpha = 1; //1 indicate estimate alpha and 0 use given value
   int var_max_iter = 30;
   double var_converged = 1e-6;
-  int n_topic = 30;
+  int n_topic = 100;
 
   Corpus cor;
   Str data = "./data/ap.dat";

@@ -48,15 +48,24 @@ double D2Alhood(double* alpha, int d, int k, double* matrix_diag) {
   return TriGamma(alpha_sum) * (-1);
 }
 
+double fabs_min(double* df,int k) {
+  double fmin = fabs(df[0]);
+  for( int i = 1; i < k; ++i) {
+    if(fabs(df[i]) < fmin)
+      fmin = fabs(df[i]);
+  }
+  return fmin;
+}
+
 double OptAlpha(const LdaSuffStats &ss, LdaModel* m) {
-//  const double  NEWTON_THRESH = 1e-5;
+  const double  NEWTON_THRESH = 1e-5;
   const int MAX_ALPHA_ITER = 1000;
   int iter = 0;
   double* gradient = new double[m->num_topics];
   double* matrix_diag = new double[m->num_topics];
   double* alpha = new double[m->num_topics];
   for(int k=0; k<m->num_topics; ++k) {
-    alpha[k] = 100;
+    alpha[k] = 0.01;
   }
 
   do {
@@ -74,9 +83,10 @@ double OptAlpha(const LdaSuffStats &ss, LdaModel* m) {
     double c = gradient_diag_ritio_sum / ( 1 / non_diag + diag_sum);
     
     for(int k=0; k<m->num_topics; ++k) {
-      m->alpha[k] = m->alpha[k] - (gradient[k] - c) / matrix_diag[k];
+      alpha[k] = alpha[k] + (gradient[k] - c) / matrix_diag[k];
+      m->alpha[k] = alpha[k];
     }
-  } while (/*(fabs(df) > NEWTON_THRESH) && */(iter < MAX_ALPHA_ITER));
+  } while ((fabs_min(gradient,m->num_topics) > NEWTON_THRESH) && (iter < MAX_ALPHA_ITER));
 
   return 0.0;
 }
