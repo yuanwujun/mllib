@@ -148,12 +148,11 @@ void LDA::RunEM(const Str &type, CorpusC &train, CorpusC &test, LdaModel* m) {
 }
 
 double LDA::Infer(CorpusC &cor, const LdaModel &m, VVReal* ga, VVVReal* phi) const {
-  double sum = 0;
+  double sum = 0.0;
   ga->resize(cor.Len());
   phi->resize(cor.Len());
   for (size_t i = 0; i < cor.Len(); i++) {
-    double l = Infer(cor, i, m, &(ga->at(i)), &(phi->at(i)));
-    sum += l;
+    sum += Infer(cor, i, m, &(ga->at(i)), &(phi->at(i)));
   }
   return exp(- sum / cor.TWordsNum());
 }
