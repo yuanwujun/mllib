@@ -43,7 +43,7 @@ double DAlhood(const LdaSuffStats &ss, double* alpha,int topic, double* gradient
 double D2Alhood(double* alpha, int d, int k, double* matrix_diag) {
   double alpha_sum = double_array_sum(alpha,k);
   for(int i=0; i<k; ++i) {
-    matrix_diag[i] = d * TriGamma(alpha[i]) - TriGamma(alpha_sum);
+    matrix_diag[i] = d * TriGamma(alpha[i]);// - TriGamma(alpha_sum);
   }
   return TriGamma(alpha_sum) * (-1);
 }
