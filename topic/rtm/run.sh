@@ -12,5 +12,5 @@ cmd="
 gdb="
   gdb ./rtm
   "
-exec $gdb
-#exec $cmd
+#exec $gdb
+exec $cmd
