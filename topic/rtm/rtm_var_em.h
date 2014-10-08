@@ -24,9 +24,9 @@ class VarRTM {
   void LiblinearInputData(VecC &alpha, const Mat &z_bar, Vec *eta) const;
   Vec ZBar(int doc_id, MatC &phi) const;
   double LinkPredict(const SpMat &test, RTMC &rtm, Mat &z_bar) const;
-  void RunEM(SpMat &test, RTM* m);
+  void RunEM(RTM* m);
   void Load(StrC &net_path, StrC &cor_path);
-  double PredictAUC(SpMat &test, RTMC &m, Mat &z_bar) ;
+  double PredictAUC(RTMC &m, Mat &z_bar) ;
  private:
   void InitVar(int d, RTMC &m, Vec* digamma, Vec* ga, Mat* phi) const;
 
@@ -41,6 +41,7 @@ class VarRTM {
   int rho_;
   Corpus cor;
   SpMat net;
+  SpMat held_out_net_;
   double lambda;
 };
 

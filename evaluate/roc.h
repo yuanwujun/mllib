@@ -67,7 +67,7 @@ inline void CROC(const SpMat &pre, const SpMat &real, VVInt* res) {
 
 inline void ToTal(const std::vector<T> &vec, int* r, int* p) {
   for (size_t i = 0; i < vec.size(); i++) {
-    if (vec[i].r == 2.0) {
+    if (vec[i].r == 1.0) {
       (*r)++;
     } else {
       (*p)++;

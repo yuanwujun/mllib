@@ -7,7 +7,7 @@
 using namespace ml;
 
 DEFINE_string(cor_path, "./data/rtm_corpus", "");
-DEFINE_string(net_path, "./data/rtm_network", "");
+DEFINE_string(net_path, "./data/network", "");
 DEFINE_int32(topic_num, 10, "");
 DEFINE_double(alpha, 0.01, "");
 
@@ -30,10 +30,8 @@ int main(int argc, char* argv[])  {
   LOG(INFO) << FLAGS_cor_path;
   var.Load(FLAGS_net_path, FLAGS_cor_path);
   
-  SpMat test;
-  ReadData(FLAGS_net_path, &test);
   RTM rtm(FLAGS_topic_num, FLAGS_alpha);
-  var.RunEM(test, &rtm);
+  var.RunEM(&rtm);
 
   return 0; 
 }

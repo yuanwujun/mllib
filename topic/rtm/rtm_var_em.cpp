@@ -77,7 +77,7 @@ Vec VarRTM::ZBar(int doc_id, MatC &phi) const {
   return v;
 }
 
-void VarRTM::RunEM(SpMat &test, RTM* m) {
+void VarRTM::RunEM(RTM* m) {
   m->Init(cor.TermNum());
   RTMSuffStats ss;
   ss.InitSS(m->TopicNum(), m->TermNum());
@@ -102,8 +102,8 @@ void VarRTM::RunEM(SpMat &test, RTM* m) {
       var_max_iter_ = var_max_iter_ * 2;
     }
     likelihood_old = likelihood;
-    LOG(INFO) << i << ":" << LinkPredict(test, *m, z_bar)
-              << " " << likelihood<<" AUC:"<<PredictAUC(test, *m, z_bar);
+    LOG(INFO) << i << ":" << /*LinkPredict(test, *m, z_bar)*/ 0
+              << " " << likelihood<<" AUC:"<<PredictAUC(*m, z_bar);
   }
 }
 
@@ -208,15 +208,19 @@ double VarRTM::LinkPredict(const SpMat &test, RTMC &m, Mat &z_bar) const {
   return std::sqrt(rmse/ test.nonZeros());
 }
 
-double VarRTM::PredictAUC(SpMat &test, RTMC &m, Mat &z_bar) {
-  VReal real;
-  VReal pre;
-  for (int d = 0;d < test.cols(); d++) {
-    for (int row = 0; row < test.rows(); row++) {
-      int lable = net.coeffRef(d,row);
-      Vec pi = z_bar.col(d).cwiseProduct(z_bar.col(row));
+double VarRTM::PredictAUC(RTMC &m, Mat &z_bar) {
+  VReal real,pre;
+  for (int d = 0;d < held_out_net_.cols(); d++) {
+    Mat phi(m.TopicNum(), cor.ULen(d)); 
+    phi.setZero();
+    Vec gamma(m.TopicNum());
+    Infer(d, m, z_bar, &gamma, &phi);
+    z_bar.col(d) = ZBar(d, phi);
+    for (SpMatInIt it(held_out_net_, d); it; ++it) {
+      double label = it.value();
+      Vec pi = z_bar.col(d).cwiseProduct(z_bar.col(it.index()));
       double prob = Sigmoid(pi.dot(m.eta));
-      real.push_back(lable);
+      real.push_back(label);
       pre.push_back(prob);
     }
   }
@@ -225,11 +229,37 @@ double VarRTM::PredictAUC(SpMat &test, RTMC &m, Mat &z_bar) {
 }
 
 void VarRTM::Load(StrC &net_path, StrC &cor_path) {
-  ReadData(net_path, &net);
+  ReadData(net_path, &net, &held_out_net_);
   cor.LoadData(cor_path);
+
+  SpMat all_network;
+  ReadData(net_path, &all_network);
+  TripleVec vec;
+  for (int d = 0;d < all_network.cols(); d++) { 
+    SInt observed;
+    for (SpMatInIt it(all_network, d); it; ++it) {
+      int row = it.row();
+      observed.insert(row);
+    }
+    int observed_size = observed.size();
+    int nonobserved_size = all_network.rows() - observed_size;
+    for (int i = 0;i < nonobserved_size / 8000; ++i) {
+      int k = Random(all_network.rows());
+      if(observed.find(k) == observed.end())
+        vec.push_back(Triple(k, d, -1));
+    }
+  }
+  for (int d = 0;d < held_out_net_.cols(); d++) {
+    for (SpMatInIt it(held_out_net_, d); it; ++it) {
+      vec.push_back(Triple(it.row(), d, 1));
+    }
+  }
+  held_out_net_.setFromTriplets(vec.begin(), vec.end());
+
   LOG(INFO) << cor_path;
   LOG(INFO) << cor.Len();
   LOG(INFO) << net.size();
+  LOG(INFO) << held_out_net_.size(); 
 }
 
 //p->n sample number, p->l feature number
