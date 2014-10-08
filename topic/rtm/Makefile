@@ -5,12 +5,12 @@ cc=g++
 
 PUB_DIR=../../lib
 
-INCLUDES= ../../common/include -I../../liblinear -I../../evaluate -I../../eigen -I$(GOOGLEINC) -I$(EIGEN)
+INCLUDES= ../../common/include -I../../liblinear -I../common/include -I../../evaluate -I../../eigen -I$(GOOGLEINC) -I$(EIGEN)
 LIB_PATH= $(PUB_DIR)/common -L$(PUB_DIR)/LinearModel -L$(GOOGLELIB) -L$(PUB_DIR)/eigen
 
 SRC_DIRS=.
 
-SRC=$(wildcard $(SRC_DIRS)/*.cpp)
+SRC=$(wildcard $(SRC_DIRS)/*.cpp ../common/*.cpp)
 OBJS=$(patsubst %.cpp,%.o,$(SRC))
 LIBS= -lpthread -lgflags -lglog -leigen -lcommon -llinear
 
@@ -22,4 +22,4 @@ $(OBJS):%.o:%.cpp
 	$(cc) -c $(CXXFLAGS) -I$(INCLUDES) $< -o $@
 
 clean:
-	rm -rf ${PROGRAM} *.o
+	rm -rf ${PROGRAM} *.o ../common/*.o
