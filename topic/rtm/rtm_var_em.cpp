@@ -96,7 +96,7 @@ void VarRTM::RunEM(RTM* m) {
     MStep(ss, m);
 //    MaxEta(z_bar, rho, m);
     Vec alpha(m->topic_num);
-    LiblinearInputData(alpha, z_bar, &(m->eta));
+    LearningEta(alpha, z_bar, &(m->eta));
     converged = (likelihood_old - likelihood) / (likelihood_old);
     if (converged < 0) {
       var_max_iter_ = var_max_iter_ * 2;
@@ -243,7 +243,7 @@ void VarRTM::Load(StrC &net_path, StrC &cor_path) {
     }
     int observed_size = observed.size();
     int nonobserved_size = all_network.rows() - observed_size;
-    for (int i = 0;i < nonobserved_size / 8000; ++i) {
+    for (int i = 0;i < nonobserved_size / 11000; ++i) {
       int k = Random(all_network.rows());
       if(observed.find(k) == observed.end())
         vec.push_back(Triple(k, d, -1));
@@ -264,7 +264,7 @@ void VarRTM::Load(StrC &net_path, StrC &cor_path) {
 
 //p->n sample number, p->l feature number
 //topic num is alpha.size()
-void VarRTM::LiblinearInputData(VecC &alpha, const Mat &z_bar, Vec *eta) const {
+void VarRTM::LearningEta(VecC &alpha, const Mat &z_bar, Vec *eta) const {
   int feature = alpha.size();
   int non_zero_num_in_net = net.nonZeros();
   int negative_sample_num = non_zero_num_in_net * rho_;

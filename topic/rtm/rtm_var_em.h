@@ -21,7 +21,7 @@ class VarRTM {
                    double initial_alpha, int n_topic,int rho);
   void MStep(const RTMSuffStats &suff, RTM* m);
   void MaxEta(const Mat &z_bar, int rho, RTM* m) const;
-  void LiblinearInputData(VecC &alpha, const Mat &z_bar, Vec *eta) const;
+  void LearningEta(VecC &alpha, const Mat &z_bar, Vec *eta) const;
   Vec ZBar(int doc_id, MatC &phi) const;
   double LinkPredict(const SpMat &test, RTMC &rtm, Mat &z_bar) const;
   void RunEM(RTM* m);
