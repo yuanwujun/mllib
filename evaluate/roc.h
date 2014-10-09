@@ -95,7 +95,7 @@ inline void CreatePoint(const std::vector<T> &vec, std::vector<Point>* p) {
   int tp = 0;
   int fp = 0;
   for (size_t i = 0; i < vec.size(); i++) {
-    if (vec[i].r >= 1.5) {
+    if (vec[i].r >= 1.0) {
       tp++;
     } else {
       fp++;
