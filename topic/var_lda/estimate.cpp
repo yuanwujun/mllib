@@ -6,7 +6,11 @@
 
 using namespace ml;
 
-int main(int argc, char* argv[]) {
+DEFINE_string(cor_path, "./data/corpus", "");
+DEFINE_int32(topic_num, 10, "");
+DEFINE_double(alpha, 0.01, "");
+
+void LdaApp() {
   long t1;
   (void) time(&t1);
   seedMT(t1);
@@ -16,14 +20,13 @@ int main(int argc, char* argv[]) {
   int em_estimate_alpha = 1; //1 indicate estimate alpha and 0 use given value
   int var_max_iter = 30;
   double var_converged = 1e-6;
-  double initial_alpha = 0.1;
-  int n_topic = 30;
+  double initial_alpha = FLAGS_alpha;
+  int n_topic = FLAGS_topic_num;
   LDA lda;
   lda.Init(em_converged, em_max_iter, em_estimate_alpha, var_max_iter,
                          var_converged, initial_alpha, n_topic);
   Corpus cor;
-  //Str data = "../../data/ap.dat";
-  Str data = "lda_data";
+  Str data = FLAGS_cor_path;
   cor.LoadData(data);
   Corpus train;
   Corpus test;
@@ -39,6 +42,11 @@ int main(int argc, char* argv[]) {
   lda.Infer(test, m, &gamma, &phi);
   WriteStrToFile(Join(gamma, " ", "\n"), "gamma");
   WriteStrToFile(Join(phi, " ", "\n", "\n\n"), "phi");
+}
+
+int main(int argc, char* argv[]) {
+  ::google::ParseCommandLineFlags(&argc, &argv, true);
+  LdaApp();
 
   return 1; 
 }
