@@ -158,7 +158,7 @@ double VarMGCTM::EStep(DocC &doc, MGCTMC &m, MGSS* ss) const {
   return likelihood;
 }
 
-void VarMGCTM::RunEM(CorpusC &test, MGCTM* m) {
+void VarMGCTM::RunEM(MGCTM* m) {
   MGSS ss;
   ss.CorpusInit(cor_, *m);
   MStep(ss, m);

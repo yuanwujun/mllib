@@ -29,7 +29,7 @@ typedef std::vector<MGVar> VMGVar;
 
 class VarMGCTM {
  public:
-  void RunEM(CorpusC &test, MGCTM* m);
+  void RunEM(MGCTM* m);
   void Load(StrC &cor_path);
   void Init(ConvergedC &converged);
   double Infer(CorpusC &cor, MGC &m, VMGVar* var) const;

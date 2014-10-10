@@ -22,17 +22,18 @@ void MGCTMApp() {
   VarMGCTM var;
   var.Init(converged);
 
-  Str path("corpus");
+  Str path(FLAGS_cor_path);
   Corpus cor;
   cor.LoadData(path);
-  
 
   var.Load(path);
   LOG(INFO) << path;
+
   MGCTM m;
   m.Init(5, 5, 10, cor.TermNum(), 0.1, 0.1, 0.1);
   LOG(INFO) << "init over";
-  var.RunEM(cor, &m);
+
+  var.RunEM(&m);
 }
 
 int main(int argc, char* argv[])  {
