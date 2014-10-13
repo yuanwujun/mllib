@@ -4,7 +4,6 @@
 #define TOPIC_VAR_MGCTM_H_
 #include "base_head.h"
 #include "cokus.h"
-#include "document.h"
 #include "eigen.h"
 #include "mgctm.h"
 #include "converged.h"
@@ -25,14 +24,12 @@ struct MGVar {
   void Init();
 };
 typedef const MGVar MGVarC;
-typedef std::vector<MGVar> VMGVar;
 
 class VarMGCTM {
  public:
   void RunEM(MGCTM* m);
   void Load(StrC &cor_path);
   void Init(ConvergedC &converged);
-  double Infer(CorpusC &cor, MGC &m, VMGVar* var) const;
  private:
   double Likelihood(DocC &doc, MGVarC &ss, MGCTMC &m) const;
   double Infer(DocC &doc, MGCTMC &m, MGVar* var) const;
@@ -47,7 +44,6 @@ class VarMGCTM {
   inline double LogBeta(VecC &vec) const;
  
   Corpus cor_;
-  Corpus test_;
   Converged converged_;
 };
 

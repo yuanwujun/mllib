@@ -10,14 +10,12 @@ double VarMGCTM::Likelihood(DocC &doc, MGVarC &var, MGCTMC &m) const {
   double likelihood = 0;
   likelihood -= LogDelta(m.GTopicNum(), m.g_alpha);
   likelihood += LogDelta(var.g_theta);
-  //1
   Vec g_theta_ep;
   GThetaEp(var.g_theta, &g_theta_ep); 
   for (int k = 0; k < g_theta_ep.size(); k++) {
     likelihood += (m.g_alpha - var.g_theta[k])*g_theta_ep[k];
   }
 
-  //2
   Mat l_theta_ep;
   LThetaEp(var.l_theta, &l_theta_ep);
   for (int j = 0; j < m.LTopicNum1(); j++) {
@@ -31,7 +29,6 @@ double VarMGCTM::Likelihood(DocC &doc, MGVarC &var, MGCTMC &m) const {
     likelihood += a;
   }
 
-  //3
   for (size_t n = 0; n < doc.ULen(); n++) {
     for (int k = 0; k < m.GTopicNum(); k++) {
       likelihood += doc.Count(n)*var.g_z(k, n)*(1 - var.delta(n))*
@@ -39,7 +36,6 @@ double VarMGCTM::Likelihood(DocC &doc, MGVarC &var, MGCTMC &m) const {
     }
   }
 
-  //4
   for (int j = 0; j < m.LTopicNum1(); j++) {
     for (size_t n = 0; n < doc.ULen(); n++) {
       for (int k = 0; k < m.LTopicNum2(); k++) {
@@ -49,7 +45,6 @@ double VarMGCTM::Likelihood(DocC &doc, MGVarC &var, MGCTMC &m) const {
     }
   }
 
-  //5
   likelihood -= LogBeta(m.gamma);
   likelihood += LogBeta(var.omega);
 
@@ -58,18 +53,10 @@ double VarMGCTM::Likelihood(DocC &doc, MGVarC &var, MGCTMC &m) const {
   likelihood += (m.gamma[1] - omega_ep[1])*omega_ep[1];
   likelihood += (m.gamma[0] - omega_ep[0])*omega_ep[0];
 
-  //6
-  for (size_t n = 0; n < doc.ULen(); n++) {
-    likelihood += var.delta[n]*(omega_ep[1] - log(var.delta[n]));
-    likelihood += (1 - var.delta[n])*(omega_ep[0] - log(1 - var.delta[n]));
-  }
-
-  //7
   for (int j = 0; j < m.LTopicNum1(); j++) {
     likelihood += var.eta[j]*(log(m.pi[j]) - var.eta[j]);
   }
 
-  //8
   for (size_t n = 0; n < doc.ULen(); n++) {
     for (int k = 0; k < m.GTopicNum(); k++) {
       likelihood += doc.Count(n) * (1 - var.delta[n])*var.g_z(k, n)*
@@ -138,17 +125,17 @@ phi: topic * doc_len
 double VarMGCTM::EStep(DocC &doc, MGCTMC &m, MGSS* ss) const {
   MGVar var;
   double likelihood = Infer(doc, m, &var);
-  for (int k = 0; k < m.GTopicNum(); k++) {
-    for (size_t n = 0; n < doc.ULen(); n++) {
-      ss->g_topic(k, doc.Word(n)) += doc.Count(n)*var.g_z(k, n);
+  for (size_t n = 0; n < doc.ULen(); n++) {
+    for (int k = 0; k < m.GTopicNum(); k++) {
+      ss->g_topic(k, doc.Word(n)) += doc.Count(n) * var.g_z(k, n);
       ss->g_topic_sum[k] += doc.Count(n) * var.g_z(k, n);
     }
   }
   for (int j = 0; j < m.LTopicNum1(); j++) {
     for (size_t n = 0; n < doc.ULen(); n++) {
       for (int k = 0; k < m.LTopicNum2(); k++) {
-        ss->l_topic[j](k, doc.Word(n)) += doc.Count(n)*var.l_z[j](k, n);
-        ss->l_topic_sum(k, j) += doc.Count(n)*var.l_z[j](k, n);
+        ss->l_topic[j](k, doc.Word(n)) += doc.Count(n) * var.l_z[j](k, n);
+        ss->l_topic_sum(k, j) += doc.Count(n) * var.l_z[j](k, n);
       }
     }
   }
@@ -161,22 +148,19 @@ double VarMGCTM::EStep(DocC &doc, MGCTMC &m, MGSS* ss) const {
 void VarMGCTM::RunEM(MGCTM* m) {
   MGSS ss;
   ss.CorpusInit(cor_, *m);
+  LOG(INFO) << "ss init over";
   MStep(ss, m);
-  LOG(INFO) << m->pi;
   LOG(INFO) << "start em";
   for (int i = 0; i < converged_.em_max_iter_; i++) {
     double likelihood = 0;
     ss.SetZero(m->GTopicNum(), m->LTopicNum1(), m->LTopicNum2(), m->TermNum());
-    //for (size_t d = 0; d < cor_.Len(); d++) {
-    for (size_t d = 0; d < 500; d++) {
-      LOG(INFO) << i << " " << d << " " << likelihood;
+    for (size_t d = 0; d < cor_.Len(); d++) {
       likelihood += EStep(cor_.docs[d], *m, &ss);
+      LOG_IF(INFO, d % 10 == 0) << d << " " << likelihood << " "
+                                 << exp(- likelihood / cor_.TWordsNum());
     }
-    LOG(INFO) << likelihood;
     MStep(ss, m);
-    VMGVar var;
-    //double per = Infer(test_, *m, &var);
-    //LOG(INFO) << per;
+    LOG(INFO) << likelihood << " " << exp(- likelihood / cor_.TWordsNum());
   }
 }
 
@@ -186,81 +170,73 @@ double VarMGCTM::Infer(DocC &doc, MGCTMC &m, MGVar* para) const {
   Mat l_diga;
   InitVar(doc, m, &g_diga, &l_diga, para);
   MGVar &p = *para;
+  Vec vec(m.GTopicNum());  //allociate one time
   for(int it = 1; (c > converged_.var_converged_) && (it < 
                        converged_.var_max_iter_); ++it) {
     //delta
-    p.omega[0] = m.gamma[0];
-    for (size_t n = 0; n < doc.ULen(); n++) {
-      p.omega[0] += p.delta(n);
-    }
-
     p.omega[1] = m.gamma[1];
     for (size_t n = 0; n < doc.ULen(); n++) {
-      p.omega[1] += (1 - p.delta(n));
+      p.omega[1] += p.delta(n)*doc.Count(n);
     }
 
-    //global theta and global z
+    p.omega[0] = m.gamma[0];
+    for (size_t n = 0; n < doc.ULen(); n++) {
+      p.omega[0] += (1 - p.delta(n))*doc.Count(n);
+    }
+
+    //global z
+    Vec g_theta_ep;
+    GThetaEp(p.g_theta, &g_theta_ep);
     for (size_t n = 0; n < doc.ULen(); n++) {
       for (int k = 0; k < m.GTopicNum(); k++) {
-        p.g_z(k, n) = (1 - p.delta[n])*g_diga[k] + m.g_ln_w(k, doc.Word(n));
+        p.g_z(k, n) = (1 - p.delta[n])*(g_theta_ep[k] + m.g_ln_w(k, doc.Word(n)));
       }
-      double ln_phi_sum = LogSum(p.g_z.col(n));
+      double ln_z_sum = LogSum(p.g_z.col(n));
       for (int k = 0; k < m.GTopicNum(); k++) { //normalize g_z
-        p.g_z(k, n) = exp(p.g_z(k, n) - ln_phi_sum);
+        p.g_z(k, n) = exp(p.g_z(k, n) - ln_z_sum);
       }
     }
 
+    //global theta
     p.g_theta.setConstant(m.g_alpha);
     for (size_t n = 0; n < doc.ULen(); n++) {
       for (int k = 0; k < m.GTopicNum(); k++) {
         p.g_theta[k] += doc.Count(n) * p.g_z(k, n);
       }
     }
-    for (int k = 0; k < m.GTopicNum(); k++) {
-      g_diga[k] = DiGamma(p.g_theta[k]);
-    }
 
-    //local theta and local z
+    //local z
+    Mat l_theta_ep;
+    LThetaEp(p.l_theta, &l_theta_ep);
     for (size_t n = 0; n < doc.ULen(); n++) {
       for (int j = 0; j < m.LTopicNum1(); j++) {
         for (int k = 0; k < m.LTopicNum2(); k++) {
-          p.l_z[j](k, n) = p.delta[n]*p.eta[j]*l_diga(k, j) +
-                           m.l_ln_w[j](k, doc.Word(n));
+          p.l_z[j](k, n) = p.delta[n]*p.eta[j]*(l_theta_ep(k, j) +
+                           m.l_ln_w[j](k, doc.Word(n)));
         }
-      }
-
-      Vec ln_local_z_var_sum(m.LTopicNum1());
-      for (int j = 0; j < m.LTopicNum1(); j++) {
-        ln_local_z_var_sum[j] = LogSum(p.l_z[j].col(n));
-      }
-      for (int j = 0; j < m.LTopicNum1(); j++) { //normalize l_z
+        double ln_local_z_sum = LogSum(p.l_z[j].col(n));
         for (int k = 0; k < m.LTopicNum2(); k++) {
-          p.l_z[j](k, n) = exp(p.l_z[j](k, n) - ln_local_z_var_sum[j]);
+          p.l_z[j](k, n) = exp(p.l_z[j](k, n) - ln_local_z_sum);
         }
       }
     }
 
+    //local z
+    //local theta
     for (int j = 0; j < m.LTopicNum1(); j++) {
       for (int k = 0; k < m.LTopicNum2(); k++) {
-        p.l_theta(k, j) = m.l_alpha[j];
+        p.l_theta(k, j) = p.eta[j] * m.l_alpha[j];
       }
-      for (size_t n = 0; n < doc.ULen(); n++) {
-        for (int k = 0; k < m.LTopicNum2(); k++) {
-          p.l_theta(k, j) += doc.Count(n) * p.l_z[j](k, n);
+    }
+    for (int j = 0; j < m.LTopicNum1(); j++) {
+      for (int k = 0; k < m.LTopicNum2(); k++) {
+        for (size_t n = 0; n < doc.ULen(); n++) {
+          p.l_theta(k, j) += p.delta[n]*p.eta[j]*doc.Count(n) * p.l_z[j](k, n)
+                             + 1 - p.eta[j];
         }
       }
     }
-
-    for (int j = 0; j < m.LTopicNum1(); j++) {
-      for (int k = 0; k < m.LTopicNum2(); k++) {
-        l_diga(k, j) = DiGamma(p.l_theta(k, j));
-      }
-    }
-
-    Mat l_theta_ep;
-    LThetaEp(p.l_theta, &l_theta_ep);
-    Vec g_theta_ep;
-    GThetaEp(p.g_theta, &g_theta_ep); 
+    
     //indicate variable eta
     for (int j = 0; j < m.LTopicNum1(); j++) {
       p.eta[j] = log(m.pi[j]);
@@ -277,43 +253,32 @@ double VarMGCTM::Infer(DocC &doc, MGCTMC &m, MGVar* para) const {
           a += p.l_z[j](k, n) * l_theta_ep(k, j);
           a += m.l_ln_w[j](k, doc.Word(n));
         }
-        p.eta[j] += p.delta[n]*a;
+        p.eta[j] += p.delta[n]*a*doc.Count(n);
       }
     }
+
     double ln_eta_sum = LogSum(p.eta);
-    for (int k = 0; k < m.LTopicNum2(); k++) { //normalize eta
-      p.eta(k) = exp(p.eta(k) - ln_eta_sum);
+    for (int j = 0; j < m.LTopicNum1(); j++) { //normalize eta
+      p.eta[j] = exp(p.eta[j] - ln_eta_sum);
     }
 
     //variable delta
     for (size_t n = 0; n < doc.ULen(); n++) {
-      double a = 0;
-      a -= DiGamma(m.gamma[0]);
-      a += DiGamma(m.gamma[1]);
-
-      for (int j = 0; j < m.LTopicNum1(); j++) {
-        for (int k = 0; k < m.LTopicNum2(); k++) {
-          a -= p.eta[j]*p.l_z[j](k, n)*(l_theta_ep(k, j)); 
+      double tmp = DiGamma(m.gamma[1]) - DiGamma(m.gamma[0]);
+      for (int k = 0; k < m.LTopicNum2(); k++) {
+        for (int j = 0; j < m.LTopicNum1(); j++) {
+          tmp += (p.eta[j]*p.l_z[j](k, n)*l_theta_ep(k,j)); 
+          tmp += p.eta[j]*p.l_z[j](k, n)*m.l_ln_w[j](k, doc.Word(n));
         }
       }
-
-      for (int j = 0; j < m.LTopicNum1(); j++) {
-        for (int k = 0; k < m.LTopicNum2(); k++) {
-          a -= p.eta[j]*p.l_z[j](k, n)*m.l_ln_w[j](k, doc.Word(n));
-        }
+      for (int k = 0; k < m.GTopicNum(); k++) {
+        tmp -= p.g_z(k, n) * g_theta_ep[k];
+        tmp -= p.g_z(k, n) * m.g_ln_w(k, doc.Word(n));
       }
-
-      for (int k = 0; k < m.LTopicNum2(); k++) {
-        a += p.g_z(k, n) * g_theta_ep[k];
-      }
-
-      for (int k = 0; k < m.LTopicNum2(); k++) {
-        a += p.g_z(k, n) * m.g_ln_w(k, doc.Word(n));
-      }
-      p.delta[n] = Sigmoid(-a);
+      p.delta[n] = Sigmoid(tmp);
     }
   }
-  return Likelihood(doc, *para, m);
+  return Likelihood(doc, p, m);
 }
 
 void VarMGCTM::MStep(MGSSC &ss, MGCTM* m) {
@@ -324,7 +289,7 @@ void VarMGCTM::MStep(MGSSC &ss, MGCTM* m) {
       for (int w = 0; w < m->TermNum(); w++) {
         if (ss.l_topic[j](k, w) > 0) {
           m->l_ln_w[j](k, w) = log(ss.l_topic[j](k, w)) -
-                               log(ss.l_topic_sum(j, k));
+                               log(ss.l_topic_sum(k, j));
         } else {
           m->l_ln_w[j](k, w) = -100;
         }
@@ -332,6 +297,7 @@ void VarMGCTM::MStep(MGSSC &ss, MGCTM* m) {
     }
   }
 
+  LOG(INFO) << "local over";
   //global
   for (int k = 0; k < m->GTopicNum(); k++) {
     for (int w = 0; w < m->TermNum(); w++) {
@@ -342,29 +308,14 @@ void VarMGCTM::MStep(MGSSC &ss, MGCTM* m) {
       }
     }
   }
+  LOG(INFO) << "global over";
 }
 
 void VarMGCTM::Load(StrC &cor_path) {
-  Corpus corpus;
-  corpus.LoadData(cor_path);
-  SplitData(corpus, 0.8, &cor_, &test_);
+  cor_.LoadData(cor_path);
 }
 
 void VarMGCTM::Init(ConvergedC &converged) {
   converged_ = converged;
-}
-
-double VarMGCTM::Infer(CorpusC &cor, MGC &m, VMGVar* var) const {
-  var->resize(cor.Len());
-  double sum = 0;
-  for (size_t i = 0; i < cor.Len(); i++) {
-    LOG(INFO) << "infer:" << i; 
-    Vec g_diga;
-    Mat l_diga;
-    InitVar(cor.docs[i], m, &g_diga, &l_diga, &(var->at(i)));
-    double l = Infer(cor.docs[i], m, &(var->at(i)));
-    sum += l;
-  }
-  return exp(- sum / cor.TWordsNum());
 }
 } // namespace ml 

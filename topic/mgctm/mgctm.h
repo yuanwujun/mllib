@@ -3,9 +3,9 @@
 #ifndef TOPIC_MGCTM_H_
 #define TOPIC_MGCTM_H_
 #include "base_head.h"
+#include "cokus.h"
 #include "document.h"
 #include "eigen.h"
-#include "cokus.h"
 
 namespace ml {
 struct MGCTM { //model include the model parameter
@@ -92,9 +92,9 @@ void MGCTMSuffStats::InitSS(int g_k, int l_k1, int l_k2, int v) {
 }
 
 void MGCTMSuffStats::CorpusInit(CorpusC &cor, MGCTMC &m) {
+  doc_num = cor.Len();
   g_topic.resize(m.GTopicNum(), m.TermNum());
   g_topic_sum.resize(m.GTopicNum());
-  doc_num = cor.Len();
   for (int k = 0; k < m.GTopicNum(); k++) {
     for (int i = 0; i < 1; i++) {
       const Document &doc = 
