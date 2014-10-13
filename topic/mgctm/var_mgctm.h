@@ -81,7 +81,7 @@ double VarMGCTM::LogDelta(VecC &alpha) const {
 }
 
 double VarMGCTM::LogBeta(VecC &vec) const {
-  return lgamma(vec.sum()) - lgamma(vec[0]) - lgamma(vec[1]);
+  return lgamma(vec[0]) + lgamma(vec[1]) - lgamma(vec.sum());
 }
 
 double VarMGCTM::LogDelta(int num, double alpha) const {

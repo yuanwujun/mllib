@@ -25,8 +25,7 @@ double VarMGCTM::Likelihood(DocC &doc, MGVarC &var, MGCTMC &m) const {
     for (int k = 0; k < m.LTopicNum2(); k++) {
       a += (m.l_alpha[j] - var.l_theta(k, j))*l_theta_ep(k, j);
     }
-    a *= var.eta[j];
-    likelihood += a;
+    likelihood += a*var.eta[j];
   }
 
   for (size_t n = 0; n < doc.ULen(); n++) {
@@ -50,8 +49,15 @@ double VarMGCTM::Likelihood(DocC &doc, MGVarC &var, MGCTMC &m) const {
 
   Vec omega_ep;
   OmegaEp(var.omega, &omega_ep);
-  likelihood += (m.gamma[1] - omega_ep[1])*omega_ep[1];
-  likelihood += (m.gamma[0] - omega_ep[0])*omega_ep[0];
+  likelihood += (m.gamma[1] - var.omega[1])*omega_ep[1];
+  likelihood += (m.gamma[0] - var.omega[0])*omega_ep[0];
+
+   /*
+  for (size_t n = 0; n < doc.ULen(); n++) {
+    likelihood += doc.Count(n)*var.delta[n]*(omega_ep[1] - log(var.delta[n]));
+    likelihood += doc.Count(n)*(1 - var.delta[n])*(omega_ep[0] - log(1 - var.delta[n]));
+  }
+  */
 
   for (int j = 0; j < m.LTopicNum1(); j++) {
     likelihood += var.eta[j]*(log(m.pi[j]) - var.eta[j]);
@@ -68,7 +74,7 @@ double VarMGCTM::Likelihood(DocC &doc, MGVarC &var, MGCTMC &m) const {
     for (size_t n = 0; n < doc.ULen(); n++) {
       for (int k = 0; k < m.LTopicNum2(); k++) {
         likelihood += doc.Count(n) * var.delta[n]*var.l_z[j](k, n)*
-                    m.l_ln_w[j](k, doc.Word(n));
+                    m.l_ln_w[j](k, doc.Word(n)) * var.eta[j];
       }
     }
   }
