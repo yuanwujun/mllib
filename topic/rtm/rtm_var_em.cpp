@@ -243,10 +243,12 @@ void VarRTM::Load(StrC &net_path, StrC &cor_path) {
     }
     int observed_size = observed.size();
     int nonobserved_size = all_network.rows() - observed_size;
-    for (int i = 0;i < nonobserved_size / 11000; ++i) {
+    for (int i = 0;i < observed_size * (nonobserved_size / 11000); ++i) {
       int k = Random(all_network.rows());
-      if(observed.find(k) == observed.end())
+      if(observed.find(k) == observed.end()) {
         vec.push_back(Triple(k, d, -1));
+        observed.insert(k);
+      }
     }
   }
   for (int d = 0;d < held_out_net_.cols(); d++) {
