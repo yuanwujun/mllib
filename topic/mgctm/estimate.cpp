@@ -7,8 +7,7 @@
 
 using namespace ml;
 
-DEFINE_string(cor_path, "./data/rtm_corpus", "");
-DEFINE_string(net_path, "./data/rtm_network", "");
+DEFINE_string(cor_path, "/data0/data/order3/order3_8000_lda_data", "");
 DEFINE_int32(topic_num, 10, "");
 DEFINE_double(alpha, 0.01, "");
 
@@ -17,7 +16,7 @@ void MGCTMApp() {
   converged.em_converged_ = 1e-4;
   converged.em_max_iter_ = 100;
   converged.var_converged_ = 1e-4;
-  converged.var_max_iter_ = 10;
+  converged.var_max_iter_ = 5;
 
   VarMGCTM var;
   var.Init(converged);
@@ -25,15 +24,17 @@ void MGCTMApp() {
   Str path(FLAGS_cor_path);
   Corpus cor;
   cor.LoadData(path);
+  LOG(INFO) <<cor.Len();
 
   var.Load(path);
   LOG(INFO) << path;
 
   MGCTM m;
-  m.Init(5, 5, 10, cor.TermNum(), 0.1, 0.1, 0.1);
+  m.Init(5, 5, 10, cor.TermNum(), 1, 0.1, 0.1);
   LOG(INFO) << "init over";
 
-  var.RunEM(&m);
+  Corpus test;
+  var.RunEM(test,&m);
 }
 
 int main(int argc, char* argv[])  {

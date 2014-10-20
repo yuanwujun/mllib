@@ -4,6 +4,7 @@
 
 #include "eigen_util.h"
 #include "mgctm.h"
+#include "topic_util.h"
 
 namespace ml {
 double VarMGCTM::Likelihood(DocC &doc, MGVarC &var, MGCTMC &m) const {
@@ -154,7 +155,7 @@ double VarMGCTM::EStep(DocC &doc, MGCTMC &m, MGSS* ss) const {
   return likelihood;
 }
 
-void VarMGCTM::RunEM(MGCTM* m) {
+void VarMGCTM::RunEM(CorpusC &test, MGCTM* m) {
   MGSS ss;
   ss.CorpusInit(cor_, *m);
   LOG(INFO) << "ss init over";
