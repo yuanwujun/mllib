@@ -52,12 +52,10 @@ double VarMGCTM::Likelihood(DocC &doc, MGVarC &var, MGCTMC &m) const {
   likelihood += (m.gamma[1] - var.omega[1])*omega_ep[1];
   likelihood += (m.gamma[0] - var.omega[0])*omega_ep[0];
 
-   /*
   for (size_t n = 0; n < doc.ULen(); n++) {
     likelihood += doc.Count(n)*var.delta[n]*(omega_ep[1] - log(var.delta[n]));
     likelihood += doc.Count(n)*(1 - var.delta[n])*(omega_ep[0] - log(1 - var.delta[n]));
   }
-  */
 
   for (int j = 0; j < m.LTopicNum1(); j++) {
     likelihood += var.eta[j]*(log(m.pi[j]) - var.eta[j]);
@@ -165,7 +163,7 @@ void VarMGCTM::RunEM(MGCTM* m) {
     ss.SetZero(m->GTopicNum(), m->LTopicNum1(), m->LTopicNum2(), m->TermNum());
     for (size_t d = 0; d < cor_.Len(); d++) {
       likelihood += EStep(cor_.docs[d], *m, &ss);
-      LOG_IF(INFO, d % 10 == 0) << d << " " << likelihood << " "
+      LOG_IF(INFO, d % 200 == 0) << d << " " << likelihood << " "
                                  << exp(- likelihood / cor_.TWordsNum());
     }
     MStep(ss, m);
@@ -258,7 +256,14 @@ double VarMGCTM::Infer(DocC &doc, MGCTMC &m, MGVar* para) const {
         tmp -= p.g_z(k, n) * g_theta_ep[k];
         tmp -= p.g_z(k, n) * m.g_ln_w(k, doc.Word(n));
       }
+      // handle nan  in order to obtain perplexity, because it suffers from log(1-prob)  .
       p.delta[n] = Sigmoid(tmp);
+      if (p.delta[n] == 1)  {
+        p.delta[n] = 0.99999;
+      }
+      if (p.delta[n] == 0) {
+        p.delta[n] = 0.00001;
+      }
 
       //local z
       for (int j = 0; j < m.LTopicNum1(); j++) {

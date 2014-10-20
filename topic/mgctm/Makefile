@@ -5,7 +5,7 @@ cc=g++
 
 PUB_DIR=../../lib
 
-INCLUDES= ../../common/include -I../common/include -I../../evaluate -I../../eigen -I$(GOOGLEINC) -I$(EIGEN)
+INCLUDES= ../../common/include -I../common/include -I../../eigen -I$(GOOGLEINC) -I$(EIGEN)
 LIB_PATH= $(PUB_DIR)/common -L$(GOOGLELIB) -L$(PUB_DIR)/eigen
 
 SRC_DIRS=.
