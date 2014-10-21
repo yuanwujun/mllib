@@ -35,6 +35,12 @@ inline void WriteStrToFile(const Str &str, const Str &file) {
   o.close();
 }
 
+inline void AppendStrToFile(const Str &str, const Str &file) {
+  std::ofstream o(file.c_str(),std::ofstream::out|std::ofstream::app);
+  o << str << std::endl;
+  o.close();
+}
+
 inline void ReadFile(const Str &file, VInt* des) {
   std::ifstream in(file.c_str(), std::ios::binary);
   in.read((char*)(&(des->at(0))), sizeof(*des));
