@@ -33,9 +33,12 @@ class VarMGCTM {
  private:
   double Likelihood(DocC &doc, MGVarC &ss, MGCTMC &m) const;
   double Infer(DocC &doc, MGCTMC &m, MGVar* var) const;
-  double EStep(DocC &doc, MGCTMC &m, MGSS* ss) const;
+  double EStep(DocC &doc, MGCTMC &m, MGSS* ss, int iterate) const;
   void MStep(MGSSC &ss, MGCTM* m);
   void InitVar(DocC &doc, MGCTMC &m, Vec* g_diga, Mat* l_diga, MGVar* var)const;
+
+  void DumpVarParamter(MGVarC& var,int iterate) const;
+  void DumpModelParamter(MGCTMC& m,int iterate) const;
  
   Corpus cor_;
   Converged converged_;

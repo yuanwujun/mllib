@@ -8,8 +8,12 @@
 using namespace ml;
 
 DEFINE_string(cor_path, "/data0/data/order3/order3_8000_lda_data", "");
-DEFINE_int32(topic_num, 10, "");
-DEFINE_double(alpha, 0.01, "");
+DEFINE_int32(local_topic_num, 10, "");
+DEFINE_int32(group, 10, "");
+DEFINE_int32(global_topic_num, 10, "");
+DEFINE_double(gamma, 1, "");
+DEFINE_double(local_alpha, 0.01, "");
+DEFINE_double(global_alpha, 0.01, "");
 
 void MGCTMApp() {
   ml::Converged converged;
@@ -30,11 +34,18 @@ void MGCTMApp() {
   LOG(INFO) << path;
 
   MGCTM m;
-  m.Init(5, 5, 10, cor.TermNum(), 1, 0.1, 0.1);
+  m.Init(FLAGS_local_topic_num, FLAGS_group, FLAGS_global_topic_num, cor.TermNum(), FLAGS_gamma, FLAGS_local_alpha, FLAGS_global_alpha);
   LOG(INFO) << "init over";
-
+  
+  Corpus train;
   Corpus test;
-  var.RunEM(test,&m);
+  double p = 0.8;
+  SplitData(cor, p, &train, &test);
+  Str type = "seeded";
+              
+  //Corpus test;
+  //var.RunEM(test,&m);
+   var.RunEM(test,&m);
 }
 
 int main(int argc, char* argv[])  {

@@ -129,7 +129,7 @@ void VarMGCTM::InitVar(DocC &doc, MGCTMC &m, Vec* g_diga, Mat* l_diga,
 Infer and compute suffstats, the motivation of infer is computing suffstats
 phi: topic * doc_len
 *****/
-double VarMGCTM::EStep(DocC &doc, MGCTMC &m, MGSS* ss) const {
+double VarMGCTM::EStep(DocC &doc, MGCTMC &m, MGSS* ss, int iterate) const {
   MGVar var;
   double likelihood = Infer(doc, m, &var);
   for (size_t n = 0; n < doc.ULen(); n++) {
@@ -152,6 +152,9 @@ double VarMGCTM::EStep(DocC &doc, MGCTMC &m, MGSS* ss) const {
   for (int j = 0; j < m.LTopicNum1(); j++) {
     ss->pi[j] += var.eta[j];
   }
+
+  DumpVarParamter(var,iterate);
+
   return likelihood;
 }
 
@@ -165,11 +168,12 @@ void VarMGCTM::RunEM(CorpusC &test, MGCTM* m) {
     double likelihood = 0;
     ss.SetZero(m->GTopicNum(), m->LTopicNum1(), m->LTopicNum2(), m->TermNum());
     for (size_t d = 0; d < cor_.Len(); d++) {
-      likelihood += EStep(cor_.docs[d], *m, &ss);
+      likelihood += EStep(cor_.docs[d], *m, &ss, i);
       LOG_IF(INFO, d % 10 == 0) << d << " " << likelihood << " "
                                  << exp(- likelihood / cor_.TWordsNum());
     }
     MStep(ss, m);
+    DumpModelParamter(*m,i);
     LOG(INFO) << likelihood << " " << exp(- likelihood / cor_.TWordsNum());
   }
 }
@@ -324,5 +328,33 @@ void VarMGCTM::Load(StrC &cor_path) {
 
 void VarMGCTM::Init(ConvergedC &converged) {
   converged_ = converged;
+}
+
+void VarMGCTM::DumpVarParamter(MGVarC& var, int iterate) const{
+  Str eta_file = "model/eta" + ToStr(iterate);
+  AppendStrToFile(EVecToStr(var.eta), eta_file);
+
+  Str local_theta_file = "model/ltheta" + ToStr(iterate);
+  for (int col = 0; col < var.l_theta.cols(); ++col) {
+    AppendStrToFile(EVecToStr(var.l_theta.col(col)), local_theta_file); 
+  }
+
+  Str global_theta_file = "model/gtheta" + ToStr(iterate);
+  AppendStrToFile(EVecToStr(var.g_theta), global_theta_file);
+}
+
+void VarMGCTM::DumpModelParamter(MGCTMC& m,int iterate) const {
+  Str global_beta = "model/gbeta" + ToStr(iterate);
+  for (int col = 0; col < m.g_ln_w.cols(); ++col) {
+    AppendStrToFile(EVecToStr(m.g_ln_w.col(col)), global_beta);
+  }
+
+  Str local_beta = "model/lbeta" + ToStr(iterate);
+  for (size_t group = 0; group < m.l_ln_w.size(); ++group) {
+    Str local_beta_group = local_beta + ToStr(group);
+    for (int col = 0; col < m.l_ln_w[group].cols(); ++col) {
+      AppendStrToFile(EVecToStr(m.l_ln_w[group].col(col)), local_beta_group);
+    }
+  }
 }
 } // namespace ml 
