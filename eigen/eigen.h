@@ -7,9 +7,11 @@
 #include "base_head.h"
 
 typedef Eigen::SparseVector<double> SpVec;
+typedef const SpVec SpVecC;
 typedef SpVec::InnerIterator SpVecInIt;
 
 typedef Eigen::SparseMatrix<double> SpMat;
+typedef const SpMat SpMatC;
 typedef SpMat::InnerIterator SpMatInIt;
 
 typedef Eigen::MatrixXd EMat;
@@ -17,13 +19,16 @@ typedef Eigen::VectorXd EVec;
 typedef Eigen::MatrixXd Mat;
 typedef Eigen::VectorXd Vec;
 typedef std::vector<EMat> VMat;
+typedef std::vector<VMat> VVMat;
 
-typedef const VMat VMatC;
 typedef const Vec VecC;
 typedef const Mat MatC;
+typedef const VMat VMatC;
+typedef const VVMat VVMatC;
 
 typedef Eigen::Triplet<double> Triple;
 typedef std::vector<Eigen::Triplet<double> > TripleVec;
+typedef std::vector<Eigen::Triplet<double> > VTriple;
 
 void ReadData(const Str &path, TripleVec* vec);
 std::pair<int, int> Max(const TripleVec &vec);
