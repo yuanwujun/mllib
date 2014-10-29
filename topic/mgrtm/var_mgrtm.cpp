@@ -14,18 +14,18 @@ Vec Mean(DocC &doc, MatC &g_z, VecC &delta) {
   for (int n = 0; n < g_z.cols(); n++) {
     v += doc.Count(n)*(1 - delta[n])*g_z.col(n);
   }
-  return v;
+  return v / doc.TLen();
 }
 
 //l_z_bar doc
-void Mean(DocC &doc, VMatC &l_z, VecC &delta, VecC &eta, Mat* l_z_bar) {
+void Mean(DocC &doc, VMatC &l_z, VecC &delta, Mat* l_z_bar) {
   for (size_t j = 0; j < l_z.size(); j++) {
     Vec vec(l_z[0].rows());
     vec.setZero();
     for (int n = 0; n < l_z[0].cols(); n++) {
-      vec += delta[n]*eta[j]*l_z[j].col(n)*doc.Count(n); 
+      vec += delta[n]*l_z[j].col(n)*doc.Count(n); 
     }
-    l_z_bar->col(j) = vec;
+    l_z_bar->col(j) = vec / doc.TLen();
   }
 }
 
@@ -122,61 +122,6 @@ double VarMGRTM::Likelihood(DocC &doc, MGRVarC &var, MGRTMC &m) const {
   return likelihood;
 }
 
-/****
-phi: topic*doc_size
-****/
-void MGRVar::Init(CorpusC &cor, MGRTMC &m) {
-  g_theta.resize(m.GTopicNum(), cor.Len());
-
-  l_theta.resize(cor.Len());
-  g_z.resize(cor.Len());
-  l_z.resize(cor.Len());
-  for (size_t d = 0; d < cor.Len(); d++) {
-    //g_theta
-    Vec v_g_theta(m.GTopicNum());
-    double a = m.g_alpha + cor.TLen(d) / static_cast<double>(m.GTopicNum());
-    v_g_theta.setConstant(a);
-    g_theta.col(d) = v_g_theta;
-
-    //g_z
-    Mat doc_g_z;
-    doc_g_z.resize(m.GTopicNum(), cor.ULen(d));
-    doc_g_z.setConstant(1.0 / m.GTopicNum());
-    g_z[d].swap(doc_g_z);
-
-    //l_theta
-    Mat doc_l_theta;
-    doc_l_theta.resize(m.LTopicNum2(), m.LTopicNum1());
-    a = m.l_alpha[0] + cor.TLen(d) / static_cast<double>(m.LTopicNum2());
-    doc_l_theta.setConstant(a);
-    l_theta[d].swap(doc_l_theta);
-  
-    //l_z
-    VMat doc_l_z;
-    doc_l_z.resize(m.LTopicNum1());
-    for (size_t j = 0; j < l_z.size(); j++) {
-      doc_l_z[j].resize(m.LTopicNum2(), cor.ULen(d));
-      doc_l_z[j].setConstant(1.0 / m.LTopicNum2());
-    }
-    l_z[d].swap(doc_l_z);
-
-    //omega
-    Vec doc_omega(2);
-    doc_omega.setConstant(0.5); 
-    omega.col(d) = doc_omega;
-
-    //delta
-    Vec doc_delta(cor.ULen(d));
-    doc_delta.setConstant(0.5); 
-    delta.col(d) = doc_delta;
-  
-    //eta
-    Vec doc_eta(m.LTopicNum1());
-    doc_eta.setConstant(1.0 / m.LTopicNum1());
-    eta.col(d) = doc_eta;
-  }
-}
-
 /*****
 Infer and compute suffstats, the motivation of infer is computing suffstats
 phi: topic * doc_len
@@ -188,9 +133,8 @@ double VarMGRTM::EStep(MGRTMC &m, MGRSS* ss) const {
   for (size_t d = 0; d < cor_.Len(); d++) {
     likelihood += Infer(d, m, ss->g_z_bar, ss->l_z_bar, &var);
 
-    ss->g_z_bar.col(d) = Mean(cor_.docs[d], var.g_z[d], var.delta.col(d));
-    Mean(cor_.docs[d], var.l_z[d], var.delta.col(d), var.eta.col(d),
-                                                     &(ss->l_z_bar[d]));
+    ss->g_z_bar.col(d) = Mean(cor_.docs[d], var.g_z[d], var.delta[d]);
+    Mean(cor_.docs[d], var.l_z[d], var.delta[d], &(ss->l_z_bar[d]));
 
     LOG_IF(INFO, d % 10 == 0) << d << " " << likelihood << " "
                                  << exp(- likelihood / cor_.TWordsNum());
@@ -198,18 +142,18 @@ double VarMGRTM::EStep(MGRTMC &m, MGRSS* ss) const {
     DocC &doc = cor_.docs[d];
     for (size_t n = 0; n < doc.ULen(); n++) {
       for (int k = 0; k < m.GTopicNum(); k++) {
-        ss->g_topic(k, doc.Word(n)) += doc.Count(n) * var.g_z[d](k, n) *
-                                     (1 - var.delta(n, d));
-        ss->g_topic_sum[k] += doc.Count(n)*var.g_z[d](k, n)*(1 - var.delta(n,d));
+        ss->g_topic(k, doc.Word(n)) += doc.Count(n)*var.g_z[d](k, n)*
+                                       (1 - var.delta[d][n]);
+        ss->g_topic_sum[k] += doc.Count(n)*var.g_z[d](k, n)*(1 - var.delta[d][n]);
       }
     }
     for (int j = 0; j < m.LTopicNum1(); j++) {
       for (size_t n = 0; n < doc.ULen(); n++) {
         for (int k = 0; k < m.LTopicNum2(); k++) {
-          ss->l_topic[j](k, doc.Word(n)) += doc.Count(n) * var.l_z[d][j](k, n)
-                                * var.delta(n, d) * var.eta(j, d);
-          ss->l_topic_sum(k, j) += doc.Count(n) * var.l_z[d][j](k, n) *
-                                  var.delta(n, d)* var.eta(j, d);
+          double a = doc.Count(n)*var.l_z[d][j](k, n)*
+                                  var.delta[d][n]*var.eta(j, d);
+          ss->l_topic[j](k, doc.Word(n)) += a;
+          ss->l_topic_sum(k, j) += a;
         }
       }
     }
@@ -217,6 +161,7 @@ double VarMGRTM::EStep(MGRTMC &m, MGRSS* ss) const {
       ss->pi[j] += var.eta(j, d);
     }
   }
+  LOG(INFO) << PredictAUC(held_out_net_, m, ss->g_z_bar, var.eta, ss->l_z_bar);
   return likelihood;
 }
 
@@ -233,14 +178,14 @@ void VarMGRTM::RunEM(MGRTM* m) {
                                                 m->TermNum(), cor_.Len());
     likelihood += EStep(*m, &ss);
     MStep(ss, m);
-    LOG(INFO) << likelihood << " " << exp(- likelihood / cor_.TWordsNum());
+    //LOG(INFO) << likelihood << " " << exp(- likelihood / cor_.TWordsNum());
   }
 }
 
 double Active(VecC &g_u, MatC &l_u, MatC &g, VMatC &l, MatC &eta,
                                              int d1, int d2) {
   double s = g_u.dot(g.col(d1).cwiseProduct(g.col(d2)));
-  for (int j = 0; j < eta.size(); j++) {
+  for (int j = 0; j < eta.rows(); j++) {
     s += eta(j, d1)*eta(j, d2)*l_u.col(j).dot(l[d1].col(j).cwiseProduct(l[d2].col(j)));
   }
   return Sigmoid(s);
@@ -273,14 +218,14 @@ double VarMGRTM::Infer(int d, MGRTMC &m, MatC &g_z_bar, VMatC &l_z_bar,
           a += p.l_z[d][j](k, n) * l_theta_ep(k, j);
           a += p.l_z[d][j](k, n) * m.l_ln_w[j](k, doc.Word(n));
         }
-        p.eta(j, d) += p.delta(n, d)*a*doc.Count(n);
+        p.eta(j, d) += p.delta[d][n]*a*doc.Count(n);
       }
 
       for (SpMatInIt it(net_, d); it; ++it) {
         VMatC &l = l_z_bar;
         Vec pi = l[d].col(j).cwiseProduct(l[it.index()].col(j));
         p.eta(j, d) += (1 - Active(m.g_u, m.l_u, g_z_bar, l_z_bar, p.eta, d,
-                     it.index()))*(m.l_u.col(j).dot(pi));
+                     it.index()))*(m.l_u.col(j).dot(pi))*p.eta(j, it.index());
       }
     }
     NormalizeCol(d, &(p.eta));
@@ -288,12 +233,12 @@ double VarMGRTM::Infer(int d, MGRTMC &m, MatC &g_z_bar, VMatC &l_z_bar,
     //omega
     p.omega(1, d) = m.gamma[1];
     for (size_t n = 0; n < doc.ULen(); n++) {
-      p.omega(1, d) += p.delta(n, d)*doc.Count(n);
+      p.omega(1, d) += p.delta[d][n]*doc.Count(n);
     }
 
     p.omega(0, d) = m.gamma[0];
     for (size_t n = 0; n < doc.ULen(); n++) {
-      p.omega(0, d) += (1 - p.delta(n, d))*doc.Count(n);
+      p.omega(0, d) += (1 - p.delta[d][n])*doc.Count(n);
     }
 
     //local theta
@@ -305,9 +250,10 @@ double VarMGRTM::Infer(int d, MGRTMC &m, MatC &g_z_bar, VMatC &l_z_bar,
     for (int j = 0; j < m.LTopicNum1(); j++) {
       for (int k = 0; k < m.LTopicNum2(); k++) {
         for (size_t n = 0; n < doc.ULen(); n++) {
-          p.l_theta[d](k, j) += doc.Count(n)* p.delta(n, d)*p.eta(j, d)*
-                             p.l_z[d][j](k, n) + 1 - p.eta(j, d);
+          p.l_theta[d](k, j) += doc.Count(n)* p.delta[d][n]*p.eta(j, d)*
+                             p.l_z[d][j](k, n);
         }
+        p.l_theta[d](k, j) += 1 - p.eta(j, d);
       }
     }
 
@@ -315,7 +261,7 @@ double VarMGRTM::Infer(int d, MGRTMC &m, MatC &g_z_bar, VMatC &l_z_bar,
     p.g_theta.setConstant(m.g_alpha);
     for (size_t n = 0; n < doc.ULen(); n++) {
       for (int k = 0; k < m.GTopicNum(); k++) {
-        p.g_theta(k, d) += doc.Count(n) * p.g_z[d](k, n) * (1 - p.delta(n, d));
+        p.g_theta(k, d) += doc.Count(n) * p.g_z[d](k, n) * (1 - p.delta[d][n]);
       }
     }
  
@@ -339,13 +285,13 @@ double VarMGRTM::Infer(int d, MGRTMC &m, MatC &g_z_bar, VMatC &l_z_bar,
         l -= m.g_u.dot(p.g_z[d].col(n).cwiseProduct(g_z_bar.col(it.index())));
         for (int j = 0; j < m.LTopicNum1(); j++) {
           Vec pi = p.l_z[d][j].col(n).cwiseProduct(l_z_bar[it.index()].col(j));
-          l += m.l_u.col(j).dot(pi);
+          l += m.l_u.col(j).dot(pi)*p.eta(j, d)*p.eta(j, it.index());
         }
         label += l * (1 - Active(m.g_u, m.l_u, g_z_bar, l_z_bar, p.eta, d,
                           it.index()));
       }
       tmp += label / doc.TLen();
-      p.delta(n, d) = Sigmoid(tmp);
+      p.delta[d][n] = Sigmoid(tmp);
 
       //local z
       for (int j = 0; j < m.LTopicNum1(); j++) {
@@ -358,7 +304,7 @@ double VarMGRTM::Infer(int d, MGRTMC &m, MatC &g_z_bar, VMatC &l_z_bar,
         gradient = gradient.cwiseProduct(m.l_u.col(j));
         gradient /= cor_.TLen(d); 
         for (int k = 0; k < m.LTopicNum2(); k++) {
-          p.l_z[d][j](k, n) = p.delta(n, d)*p.eta(j, d)*(l_theta_ep(k, j) +
+          p.l_z[d][j](k, n) = p.delta[d][n]*p.eta(j, d)*(l_theta_ep(k, j) +
                            m.l_ln_w[j](k, doc.Word(n))) + gradient[k];
         }
         NormalizeCol(n, &(p.l_z[d][j]));
@@ -375,7 +321,7 @@ double VarMGRTM::Infer(int d, MGRTMC &m, MatC &g_z_bar, VMatC &l_z_bar,
       gradient /= cor_.TLen(d); 
 
       for (int k = 0; k < m.GTopicNum(); k++) {
-        p.g_z[d](k, n) = (1 - p.delta(n, d))*(g_theta_ep[k] +
+        p.g_z[d](k, n) = (1 - p.delta[d][n])*(g_theta_ep[k] +
                       m.g_ln_w(k, doc.Word(n))) + gradient[k];
       }
       NormalizeCol(n, &(p.g_z[d]));
@@ -416,6 +362,7 @@ void VarMGRTM::MStep(MGRSSC &ss, MGRTM* m) {
   }
   LOG(INFO) << "global over";
   LearningEta(ss.g_z_bar, ss.l_z_bar, &(m->g_u), &(m->l_u));
+  LOG(INFO) << "learning eta";
 }
 
 void AddNegative(SpMatC &src, int times, VTriple* des) {
@@ -460,44 +407,48 @@ void VarMGRTM::Init(ConvergedC &converged) {
   converged_ = converged;
 }
 
-void VarMGRTM::AddPi(VecC &pi, int feature_index,  feature_node* x_space) const {
+void VarMGRTM::AddPi(VecC &pi, int &feature_index, feature_node* x_space,
+                                                   int &dim_index) const {
   for (int i = 0; i < pi.size(); ++i) {
-    x_space[feature_index].index = i+1;
+    x_space[feature_index].index = dim_index;
     x_space[feature_index].value = pi[i];
     feature_index++;
+    dim_index++;
   }
 }
-
+ 
 void VarMGRTM::LibLinearSample(MatC &g_z_bar, VMatC &l_z_bar,
-                               feature_node* x_space, problem* prob) const {
+                               feature_node* &x_space, problem* prob) const {
   // load positive sample from net between documents.
   int feature_index = 0;
   int sample_index = 0; //index for train data
   for (size_t d = 0; d < cor_.Len(); d++) {
     for (SpMatInIt it(net_, d); it; ++it) {
+      int dim_index = 1;
       Vec pi = g_z_bar.col(d).cwiseProduct(g_z_bar.col(it.index()));
       prob->y[sample_index] = it.value();
-      prob->x[sample_index] = &x_space[sample_index];
-      AddPi(pi, feature_index, x_space);
-      feature_index += pi.size();
+      prob->x[sample_index] = &x_space[feature_index];
+      AddPi(pi, feature_index, x_space, dim_index);
+ 
       for (int j = 0; j < l_z_bar[0].cols(); ++j) {
         Vec pi = l_z_bar[d].col(j).cwiseProduct(l_z_bar[it.index()].col(j));
-        AddPi(pi, feature_index, x_space);
-        feature_index += pi.size();
-      }
-      x_space[feature_index++].index = -1;
+        AddPi(pi, feature_index, x_space, dim_index);
+      }   
+      x_space[feature_index++].index = -1; 
       sample_index++;
-    }
+    }   
   }
 }
- 
+
 //p->n sample number, p->l feature number
 //topic num is alpha.size()
 void VarMGRTM::LearningEta(MatC &g_z_bar, VMatC &l_z_bar, Vec* g_u,
                                                           Mat* l_u) const {
-  int feature_num = g_z_bar.rows() + l_z_bar.size() * l_z_bar[0].rows();
+  int feature_num = g_z_bar.rows() + l_z_bar[0].cols() * l_z_bar[0].rows();
   int training_data_num = net_.nonZeros();
-  long elements = training_data_num * feature_num + training_data_num;
+  LOG(INFO) << training_data_num << " " << feature_num;
+  long long elements = training_data_num * feature_num + training_data_num;
+  LOG(INFO) << elements;
 	
   parameter param;
   param.solver_type = L2R_LR;
@@ -514,6 +465,7 @@ void VarMGRTM::LearningEta(MatC &g_z_bar, VMatC &l_z_bar, Vec* g_u,
   prob.y = (double*)malloc(sizeof(double) * prob.l);
   prob.x = (struct feature_node **)malloc(sizeof(struct feature_node*) * prob.l);
   prob.n = feature_num;
+  LOG(INFO) << elements;
   feature_node *x_space = (feature_node*)malloc(sizeof(feature_node)*elements);
 
   LibLinearSample(g_z_bar, l_z_bar, x_space, &prob);
@@ -524,9 +476,10 @@ void VarMGRTM::LearningEta(MatC &g_z_bar, VMatC &l_z_bar, Vec* g_u,
   }
   for (int j = 0; j < l_u->cols(); ++j) {
     for (int i = 0; i < l_u->rows(); ++i) {
-      (*l_u)(i, j) = solver->w[j * l_u->rows() + i];
+      (*l_u)(i, j) = solver->w[g_u->size() + j * l_u->rows() + i];
     }
   }
+  LOG(INFO) << "a";
   
   free(solver->w);
   free(solver->label);
@@ -536,8 +489,8 @@ void VarMGRTM::LearningEta(MatC &g_z_bar, VMatC &l_z_bar, Vec* g_u,
   free(x_space);
 }
 
-double VarMGRTM::PredictAUC(SpMat &test, MGRTMC &m, Mat &g_z_bar, MatC &eta,
-                            VMatC &l_z_bar) {
+double VarMGRTM::PredictAUC(SpMatC &test, MGRTMC &m, Mat &g_z_bar, MatC &eta,
+                            VMatC &l_z_bar) const {
   VReal real;
   VReal pre;
   for (int d = 0; d < test.cols(); d++) {

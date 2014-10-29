@@ -21,6 +21,8 @@ typedef Eigen::VectorXd Vec;
 typedef std::vector<EMat> VMat;
 typedef std::vector<VMat> VVMat;
 
+typedef std::vector<Vec> VVec;
+
 typedef const Vec VecC;
 typedef const Mat MatC;
 typedef const VMat VMatC;

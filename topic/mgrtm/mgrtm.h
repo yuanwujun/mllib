@@ -99,16 +99,6 @@ void MGRTMSuffStats::SetZero(int g_k, int l_k1, int l_k2, int v, int doc_num) {
   SetZeroZBar(g_k, l_k1, l_k2, doc_num);
 }
 
-void MGRTMSuffStats::InitSS(int g_k, int l_k1, int l_k2, int v, int doc_num) { 
-  SetZero(g_k, l_k1, l_k2, v, doc_num);
-  g_topic.setConstant(1.0 / v);
-  g_topic_sum.setConstant(1);
-  for (size_t i = 0; i < l_topic.size(); i++) {
-    l_topic[i].resize(l_k1, v);
-  }
-  g_topic_sum.setConstant(1);
-}
-
 void MGRTMSuffStats::CorpusInit(CorpusC &cor, MGRTMC &m) {
   g_topic.resize(m.GTopicNum(), m.TermNum());
   g_topic_sum.resize(m.GTopicNum());
