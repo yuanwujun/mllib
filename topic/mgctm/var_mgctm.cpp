@@ -236,9 +236,9 @@ double VarMGCTM::Infer(DocC &doc, MGCTMC &m, MGVar* para) const {
     for (int j = 0; j < m.LTopicNum1(); j++) {
       for (int k = 0; k < m.LTopicNum2(); k++) {
         for (size_t n = 0; n < doc.ULen(); n++) {
-          p.l_theta(k, j) += doc.Count(n)* p.delta[n]*p.eta[j]* p.l_z[j](k, n)
-                             + 1 - p.eta[j];
+          p.l_theta(k, j) += doc.Count(n)* p.delta[n]*p.eta[j]* p.l_z[j](k, n);
         }
+        p.l_theta(k, j) += 1 - p.eta[j];
       }
     }
 
