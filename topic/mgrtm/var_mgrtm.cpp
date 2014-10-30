@@ -136,7 +136,7 @@ double VarMGRTM::EStep(MGRTMC &m, MGRSS* ss) const {
     ss->g_z_bar.col(d) = Mean(cor_.docs[d], var.g_z[d], var.delta[d]);
     Mean(cor_.docs[d], var.l_z[d], var.delta[d], &(ss->l_z_bar[d]));
 
-    LOG_IF(INFO, d % 100 == 0) << d << " " << likelihood << " "
+    LOG_IF(INFO, d % 400 == 0) << d << " " << likelihood << " "
                                  << exp(- likelihood / cor_.TWordsNum());
 
     DocC &doc = cor_.docs[d];
@@ -162,6 +162,7 @@ double VarMGRTM::EStep(MGRTMC &m, MGRSS* ss) const {
     }
   }
   LOG(INFO) << PredictAUC(held_out_net_, m, ss->g_z_bar, var.eta, ss->l_z_bar);
+  ss->eta = var.eta;
   return likelihood;
 }
 
@@ -177,6 +178,7 @@ void VarMGRTM::RunEM(MGRTM* m) {
                                                 m->TermNum(), cor_.Len());
     likelihood += EStep(*m, &ss);
     MStep(ss, m);
+    LearningEta(ss.g_z_bar, ss.l_z_bar, ss.eta, &(m->g_u), &(m->l_u));
     //LOG(INFO) << likelihood << " " << exp(- likelihood / cor_.TWordsNum());
   }
 }
@@ -356,7 +358,6 @@ void VarMGRTM::MStep(MGRSSC &ss, MGRTM* m) {
       }
     }
   }
-  LearningEta(ss.g_z_bar, ss.l_z_bar, &(m->g_u), &(m->l_u));
   LOG(INFO) << "MStep Over";
 }
 
@@ -399,7 +400,7 @@ void VarMGRTM::AddPi(VecC &pi, int &feature_index, feature_node* x_space,
   }
 }
 
-void VarMGRTM::LearningEta(MatC &g_z_bar, VMatC &l_z_bar,
+void VarMGRTM::LearningEta(MatC &g_z_bar, VMatC &l_z_bar, MatC &eta,
                            Vec* g_u,Mat* l_u) const {
   int global_feature = g_z_bar.rows();
   int local_feature = l_z_bar[0].rows();
@@ -440,7 +441,7 @@ void VarMGRTM::LearningEta(MatC &g_z_bar, VMatC &l_z_bar,
       AddPi(pi, feature_index, x_space, dim_index);
  
       for (int j = 0; j < l_z_bar[0].cols(); ++j) {
-        Vec pi = l_z_bar[d].col(j).cwiseProduct(l_z_bar[it.index()].col(j));
+        Vec pi = eta(j, d)*eta(j, it.index())*l_z_bar[d].col(j).cwiseProduct(l_z_bar[it.index()].col(j));
         AddPi(pi, feature_index, x_space, dim_index);
       }   
       x_space[feature_index++].index = -1; 
@@ -449,16 +450,16 @@ void VarMGRTM::LearningEta(MatC &g_z_bar, VMatC &l_z_bar,
   }  
   
   // construct negative sample from Dirichlet prior of the model.
-  for(int neg_i = 0;neg_i < negative_sample_num;++neg_i) {
+  for(int neg_i = 0; neg_i < negative_sample_num; ++neg_i) {
     int dim_index = 1;
-  	prob.y[sample_index] = -1;
-  	prob.x[sample_index] = &x_space[feature_index];
+    prob.y[sample_index] = -1;
+    prob.x[sample_index] = &x_space[feature_index];
   	
     Vec pi;
-    pi.setConstant(1 / (global_feature * global_feature));
+    pi.setConstant(1.0 / (global_feature * global_feature));
     AddPi(pi, feature_index, x_space, dim_index);
     for (int j = 0; j < l_z_bar[0].cols(); ++j) {
-      pi.setConstant(1 / (local_feature * local_feature));
+      pi.setConstant(1.0 / (local_feature * local_feature));
       AddPi(pi, feature_index, x_space, dim_index);
     } 
     x_space[feature_index++].index = -1;

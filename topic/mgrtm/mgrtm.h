@@ -43,6 +43,7 @@ struct MGRTMSuffStats {
   Mat g_z_bar;  // real ss need element-wise dot of two doc
   VMat l_z_bar;  // real ss need element-wise dot of two doc
   double doc_num;
+  Mat eta;
 };
 typedef const MGRTMSuffStats MGRTMSuffStatsC;
 typedef MGRTMSuffStats MGRSS;

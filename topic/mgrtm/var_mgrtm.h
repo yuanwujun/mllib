@@ -34,7 +34,8 @@ class VarMGRTM {
   double PredictAUC(SpMatC &test, MGRTMC &m, Mat &g_z_bar, MatC &eta,
                             VMatC &l_z_bar) const;
  private:
-  void LearningEta(MatC &g_z_bar, VMatC &l_z_bar, Vec* g_u, Mat* l_u) const;
+  void LearningEta(MatC &g_z_bar, VMatC &l_z_bar, MatC &eta,
+                                  Vec* g_u, Mat* l_u) const;
   void AddPi(VecC &pi, int &feature_index, feature_node* x_space,
                                                    int &dim_index) const;
  
