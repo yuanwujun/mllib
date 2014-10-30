@@ -25,7 +25,7 @@ class VarRTM {
   Vec ZBar(int doc_id, MatC &phi) const;
   double LinkPredict(const SpMat &test, RTMC &rtm, Mat &z_bar) const;
   void RunEM(RTM* m);
-  void Load(StrC &net_path, StrC &cor_path);
+  void Load(StrC &net_path, StrC &cor_path, int times);
   double PredictAUC(RTMC &m, Mat &z_bar) ;
  private:
   void InitVar(int d, RTMC &m, Vec* digamma, Vec* ga, Mat* phi) const;

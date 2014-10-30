@@ -6,8 +6,8 @@
 
 using namespace ml;
 
-DEFINE_string(cor_path, "./data/rtm_corpus", "");
-DEFINE_string(net_path, "./data/network", "");
+DEFINE_string(cor_path, "/data0/data/rtm/corpus", "");
+DEFINE_string(net_path, "/data0/data/rtm/link", "");
 DEFINE_int32(topic_num, 10, "");
 DEFINE_double(alpha, 0.01, "");
 
@@ -24,11 +24,13 @@ int main(int argc, char* argv[])  {
   double initial_alpha = 0.1;
   VarRTM var;
 
+  int times = 10;
+
   var.Init(em_converged, em_max_iter, em_estimate_alpha, var_max_iter,
                          var_converged, initial_alpha, FLAGS_topic_num,1);
   LOG(INFO) << FLAGS_net_path;
   LOG(INFO) << FLAGS_cor_path;
-  var.Load(FLAGS_net_path, FLAGS_cor_path);
+  var.Load(FLAGS_net_path, FLAGS_cor_path, times);
   
   RTM rtm(FLAGS_topic_num, FLAGS_alpha);
   var.RunEM(&rtm);

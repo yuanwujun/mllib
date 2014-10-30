@@ -228,7 +228,7 @@ double VarRTM::PredictAUC(RTMC &m, Mat &z_bar) {
   return AUC(real,pre);
 }
 
-void VarRTM::Load(StrC &net_path, StrC &cor_path) {
+void VarRTM::Load(StrC &net_path, StrC &cor_path, int times) {
   ReadData(net_path, &net, &held_out_net_);
   cor.LoadData(cor_path);
 
@@ -242,8 +242,7 @@ void VarRTM::Load(StrC &net_path, StrC &cor_path) {
       observed.insert(row);
     }
     int observed_size = observed.size();
-    int nonobserved_size = all_network.rows() - observed_size;
-    for (int i = 0;i < observed_size * (nonobserved_size / 11000); ++i) {
+    for (int i = 0;i < observed_size * times; ++i) {
       int k = Random(all_network.rows());
       if(observed.find(k) == observed.end()) {
         vec.push_back(Triple(k, d, -1));
