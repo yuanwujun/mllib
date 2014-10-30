@@ -168,7 +168,6 @@ double VarMGRTM::EStep(MGRTMC &m, MGRSS* ss) const {
 void VarMGRTM::RunEM(MGRTM* m) {
   MGRSS ss;
   ss.CorpusInit(cor_, *m);
-  LOG(INFO) << "ss init over";
   MStep(ss, m);
   LOG(INFO) << "start em";
   for (int i = 0; i < converged_.em_max_iter_; i++) {
