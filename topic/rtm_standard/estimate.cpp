@@ -28,7 +28,7 @@ int main(int argc, char* argv[])  {
   int times = 10;
 
   var.Init(em_converged, em_max_iter, em_estimate_alpha, var_max_iter,doc_var_max_iter,
-                         var_converged, initial_alpha, FLAGS_topic_num,1);
+                         var_converged, initial_alpha, FLAGS_topic_num,3);
   LOG(INFO) << FLAGS_net_path;
   LOG(INFO) << FLAGS_cor_path;
   var.Load(FLAGS_net_path, FLAGS_cor_path, times);
