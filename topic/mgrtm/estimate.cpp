@@ -8,7 +8,8 @@ using namespace ml;
 
 DEFINE_string(cor_path, "./data/rtm_corpus", "");
 DEFINE_string(net_path, "./data/rtm_network", "");
-DEFINE_int32(topic_num, 10, "");
+DEFINE_int32(local_topic, 10, "");
+DEFINE_int32(global_topic, 10, "");
 DEFINE_int32(neg_times, 10, "");
 DEFINE_double(alpha, 0.01, "");
 
@@ -29,7 +30,7 @@ void MGRTMApp() {
   cor.LoadData(path);
                            
   MGRTM m;
-  m.Init(2, 5, 5, cor.TermNum(), 1, 0.01, 0.01);
+  m.Init(2, FLAGS_local_topic, FLAGS_global_topic, cor.TermNum(), 1, 0.01, 0.01);
   var.RunEM(&m);
 }
 
