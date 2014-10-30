@@ -136,7 +136,7 @@ double VarMGRTM::EStep(MGRTMC &m, MGRSS* ss) const {
     ss->g_z_bar.col(d) = Mean(cor_.docs[d], var.g_z[d], var.delta[d]);
     Mean(cor_.docs[d], var.l_z[d], var.delta[d], &(ss->l_z_bar[d]));
 
-    LOG_IF(INFO, d % 10 == 0) << d << " " << likelihood << " "
+    LOG_IF(INFO, d % 100 == 0) << d << " " << likelihood << " "
                                  << exp(- likelihood / cor_.TWordsNum());
 
     DocC &doc = cor_.docs[d];
@@ -330,8 +330,6 @@ double VarMGRTM::Infer(int d, MGRTMC &m, MatC &g_z_bar, VMatC &l_z_bar,
   return Likelihood(cor_.docs[d], p, m);
 }
 
-//  p.g_z_bar.col(d) = Mean(var.g_z, var.delta);
-//  Mean(var.l_z, delta, eta, &(var.l_z_bar[d]));
 //these action should be done in post 
 void VarMGRTM::MStep(MGRSSC &ss, MGRTM* m) {
   //local
@@ -349,7 +347,6 @@ void VarMGRTM::MStep(MGRSSC &ss, MGRTM* m) {
     }
   }
 
-  LOG(INFO) << "local over";
   //global
   for (int k = 0; k < m->GTopicNum(); k++) {
     for (int w = 0; w < m->TermNum(); w++) {
@@ -360,9 +357,8 @@ void VarMGRTM::MStep(MGRSSC &ss, MGRTM* m) {
       }
     }
   }
-  LOG(INFO) << "global over";
   LearningEta(ss.g_z_bar, ss.l_z_bar, &(m->g_u), &(m->l_u));
-  LOG(INFO) << "learning eta";
+  LOG(INFO) << "MStep Over";
 }
 
 void VarMGRTM::Load(StrC &net_path, StrC &cor_path, int times) {
@@ -375,8 +371,7 @@ void VarMGRTM::Load(StrC &net_path, StrC &cor_path, int times) {
   for (int d = 0;d < all_network.cols(); d++) { 
     SInt observed;
     for (SpMatInIt it(all_network, d); it; ++it) {
-      int row = it.row();
-      observed.insert(row);
+      observed.insert(it.row());
     }
     int observed_size = observed.size();
     for (int i = 0;i < observed_size * times; ++i) {
@@ -405,13 +400,12 @@ void VarMGRTM::AddPi(VecC &pi, int &feature_index, feature_node* x_space,
   }
 }
 
-//p->n sample number, p->l feature number
-//topic num is alpha.size()
 void VarMGRTM::LearningEta(MatC &g_z_bar, VMatC &l_z_bar,
-                                  Vec* g_u,Mat* l_u) const {
+                           Vec* g_u,Mat* l_u) const {
   int global_feature = g_z_bar.rows();
   int local_feature = l_z_bar[0].rows();
-  int feature_num = global_feature + l_z_bar[0].cols() * local_feature;
+  int group = l_z_bar[0].cols();
+  int feature_num = global_feature + group * local_feature;
   int non_zero_num_in_net = net_.nonZeros();
   int negative_sample_num = non_zero_num_in_net * rho_;
   int training_data_num = non_zero_num_in_net + negative_sample_num;
@@ -432,12 +426,12 @@ void VarMGRTM::LearningEta(MatC &g_z_bar, VMatC &l_z_bar,
   prob.y = (double*)malloc(sizeof(double) * prob.l);
   prob.x = (struct feature_node **)malloc(sizeof(struct feature_node*) * prob.l);
   prob.n = feature_num;
-  LOG(INFO) << elements;
   feature_node *x_space = (feature_node*)malloc(sizeof(feature_node)*elements);
 
-  // load positive sample from net between documents.
   int feature_index = 0;
   int sample_index = 0; //index for train data
+
+  // load positive sample from net between documents.
   for (size_t d = 0; d < cor_.Len(); d++) {
     for (SpMatInIt it(net_, d); it; ++it) {
       int dim_index = 1;
@@ -458,10 +452,10 @@ void VarMGRTM::LearningEta(MatC &g_z_bar, VMatC &l_z_bar,
   // construct negative sample from Dirichlet prior of the model.
   for(int neg_i = 0;neg_i < negative_sample_num;++neg_i) {
     int dim_index = 1;
-    Vec pi;
   	prob.y[sample_index] = -1;
   	prob.x[sample_index] = &x_space[feature_index];
   	
+    Vec pi;
     pi.setConstant(1 / (global_feature * global_feature));
     AddPi(pi, feature_index, x_space, dim_index);
     for (int j = 0; j < l_z_bar[0].cols(); ++j) {

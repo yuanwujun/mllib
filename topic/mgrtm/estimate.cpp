@@ -23,13 +23,11 @@ void MGRTMApp() {
   VarMGRTM var;
   var.Init(converged,rho);
   var.Load(FLAGS_net_path, FLAGS_cor_path, FLAGS_neg_times);
-  LOG(INFO) << "b";
                     
   Str path(FLAGS_cor_path);
   Corpus cor;
   cor.LoadData(path);
                            
-  LOG(INFO) << "b";
   MGRTM m;
   m.Init(2, 5, 5, cor.TermNum(), 1, 0.01, 0.01);
   var.RunEM(&m);
