@@ -18,16 +18,18 @@ void MGRTMApp() {
   converged.em_max_iter_ = 100;
   converged.var_converged_ = 1e-4;
   converged.var_max_iter_ = 10;
-
+  int rho = 3;
+           
   VarMGRTM var;
-  var.Init(converged);
+  var.Init(converged,rho);
   var.Load(FLAGS_net_path, FLAGS_cor_path, FLAGS_neg_times);
-
+  LOG(INFO) << "b";
+                    
   Str path(FLAGS_cor_path);
   Corpus cor;
   cor.LoadData(path);
-
-  LOG(INFO) << "b"; 
+                           
+  LOG(INFO) << "b";
   MGRTM m;
   m.Init(2, 5, 5, cor.TermNum(), 1, 0.01, 0.01);
   var.RunEM(&m);
@@ -35,8 +37,6 @@ void MGRTMApp() {
 
 int main(int argc, char* argv[])  {
   ::google::ParseCommandLineFlags(&argc, &argv, true);
-  //MGCTMApp();
   MGRTMApp();
-  //RTMApp();
   return 0; 
 }

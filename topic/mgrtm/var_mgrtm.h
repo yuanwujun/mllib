@@ -30,15 +30,13 @@ class VarMGRTM {
  public:
   void RunEM(MGRTM* m);
   void Load(StrC &net_path, StrC &cor_path, int times);
-  void Init(ConvergedC &converged);
+  void Init(ConvergedC &converged,int rho);
   double PredictAUC(SpMatC &test, MGRTMC &m, Mat &g_z_bar, MatC &eta,
                             VMatC &l_z_bar) const;
  private:
   void LearningEta(MatC &g_z_bar, VMatC &l_z_bar, Vec* g_u, Mat* l_u) const;
   void AddPi(VecC &pi, int &feature_index, feature_node* x_space,
                                                    int &dim_index) const;
-  void LibLinearSample(MatC &g_z_bar, VMatC &l_z_bar,
-                       feature_node* &x_space, problem* prob) const;
  
   double Likelihood(DocC &doc, MGRVarC &ss, MGRTMC &m) const;
   double Infer(int d, MGRTMC &m, MatC &g_z, VMatC &l_z,
@@ -52,7 +50,13 @@ class VarMGRTM {
   SpMat net_;
   SpMat held_out_net_;
   Converged converged_;
+  int rho_;
 };
+
+inline void VarMGRTM::Init(ConvergedC &converged,int rho) {
+  converged_ = converged;
+  rho_ = rho;
+}
 
 /****
 phi: topic*doc_size

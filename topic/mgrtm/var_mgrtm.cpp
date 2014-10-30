@@ -365,46 +365,34 @@ void VarMGRTM::MStep(MGRSSC &ss, MGRTM* m) {
   LOG(INFO) << "learning eta";
 }
 
-void AddNegative(SpMatC &src, int times, VTriple* des) {
-  for (int d = 0; d < src.cols(); d++) { 
+void VarMGRTM::Load(StrC &net_path, StrC &cor_path, int times) {
+  cor_.LoadData(cor_path);
+  ReadData(net_path, &net_, &held_out_net_);
+
+  SpMat all_network;
+  ReadData(net_path, &all_network);
+  TripleVec vec;
+  for (int d = 0;d < all_network.cols(); d++) { 
     SInt observed;
-    for (SpMatInIt it(src, d); it; ++it) {
-      observed.insert(it.index());
+    for (SpMatInIt it(all_network, d); it; ++it) {
+      int row = it.row();
+      observed.insert(row);
     }
-    int size = observed.size();
-    for (int i = 0; i < size * times; ++i) {
-      int k = Random(src.rows());
+    int observed_size = observed.size();
+    for (int i = 0;i < observed_size * times; ++i) {
+      int k = Random(all_network.rows());
       if(observed.find(k) == observed.end()) {
-        des->push_back(Triple(k, d, -1));
+        vec.push_back(Triple(k, d, -1));
         observed.insert(k);
       }
     }
   }
-  for (int d = 0; d < src.cols(); d++) {
-    for (SpMatInIt it(src, d); it; ++it) {
-      des->push_back(Triple(it.index(), d, 1));
+  for (int d = 0;d < held_out_net_.cols(); d++) {
+    for (SpMatInIt it(held_out_net_, d); it; ++it) {
+      vec.push_back(Triple(it.row(), d, 1));
     }
   }
-}
-
-void VarMGRTM::Load(StrC &net_path, StrC &cor_path, int times) {
-  cor_.LoadData(cor_path);
-  SpMat network;
-  ReadData(net_path, &network);
-
-  VTriple vec;
-  AddNegative(network, times, &vec);
-  VTriple train;
-  VTriple test;
-  ::SplitData(vec, 0.8, &train, &test);
-  net_.resize(network.rows(), network.cols());
-  net_.setFromTriplets(train.begin(), train.end());
-  held_out_net_.resize(network.rows(), network.cols());
-  held_out_net_.setFromTriplets(test.begin(), test.end());
-}
-
-void VarMGRTM::Init(ConvergedC &converged) {
-  converged_ = converged;
+  held_out_net_.setFromTriplets(vec.begin(), vec.end());
 }
 
 void VarMGRTM::AddPi(VecC &pi, int &feature_index, feature_node* x_space,
@@ -416,39 +404,18 @@ void VarMGRTM::AddPi(VecC &pi, int &feature_index, feature_node* x_space,
     dim_index++;
   }
 }
- 
-void VarMGRTM::LibLinearSample(MatC &g_z_bar, VMatC &l_z_bar,
-                               feature_node* &x_space, problem* prob) const {
-  // load positive sample from net between documents.
-  int feature_index = 0;
-  int sample_index = 0; //index for train data
-  for (size_t d = 0; d < cor_.Len(); d++) {
-    for (SpMatInIt it(net_, d); it; ++it) {
-      int dim_index = 1;
-      Vec pi = g_z_bar.col(d).cwiseProduct(g_z_bar.col(it.index()));
-      prob->y[sample_index] = it.value();
-      prob->x[sample_index] = &x_space[feature_index];
-      AddPi(pi, feature_index, x_space, dim_index);
- 
-      for (int j = 0; j < l_z_bar[0].cols(); ++j) {
-        Vec pi = l_z_bar[d].col(j).cwiseProduct(l_z_bar[it.index()].col(j));
-        AddPi(pi, feature_index, x_space, dim_index);
-      }   
-      x_space[feature_index++].index = -1; 
-      sample_index++;
-    }   
-  }
-}
 
 //p->n sample number, p->l feature number
 //topic num is alpha.size()
-void VarMGRTM::LearningEta(MatC &g_z_bar, VMatC &l_z_bar, Vec* g_u,
-                                                          Mat* l_u) const {
-  int feature_num = g_z_bar.rows() + l_z_bar[0].cols() * l_z_bar[0].rows();
-  int training_data_num = net_.nonZeros();
-  LOG(INFO) << training_data_num << " " << feature_num;
-  long long elements = training_data_num * feature_num + training_data_num;
-  LOG(INFO) << elements;
+void VarMGRTM::LearningEta(MatC &g_z_bar, VMatC &l_z_bar,
+                                  Vec* g_u,Mat* l_u) const {
+  int global_feature = g_z_bar.rows();
+  int local_feature = l_z_bar[0].rows();
+  int feature_num = global_feature + l_z_bar[0].cols() * local_feature;
+  int non_zero_num_in_net = net_.nonZeros();
+  int negative_sample_num = non_zero_num_in_net * rho_;
+  int training_data_num = non_zero_num_in_net + negative_sample_num;
+  long elements = training_data_num * feature_num + training_data_num;
 	
   parameter param;
   param.solver_type = L2R_LR;
@@ -468,7 +435,43 @@ void VarMGRTM::LearningEta(MatC &g_z_bar, VMatC &l_z_bar, Vec* g_u,
   LOG(INFO) << elements;
   feature_node *x_space = (feature_node*)malloc(sizeof(feature_node)*elements);
 
-  LibLinearSample(g_z_bar, l_z_bar, x_space, &prob);
+  // load positive sample from net between documents.
+  int feature_index = 0;
+  int sample_index = 0; //index for train data
+  for (size_t d = 0; d < cor_.Len(); d++) {
+    for (SpMatInIt it(net_, d); it; ++it) {
+      int dim_index = 1;
+      prob.y[sample_index] = 1;
+      prob.x[sample_index] = &x_space[feature_index];
+      Vec pi = g_z_bar.col(d).cwiseProduct(g_z_bar.col(it.index()));
+      AddPi(pi, feature_index, x_space, dim_index);
+ 
+      for (int j = 0; j < l_z_bar[0].cols(); ++j) {
+        Vec pi = l_z_bar[d].col(j).cwiseProduct(l_z_bar[it.index()].col(j));
+        AddPi(pi, feature_index, x_space, dim_index);
+      }   
+      x_space[feature_index++].index = -1; 
+      sample_index++;
+    }   
+  }  
+  
+  // construct negative sample from Dirichlet prior of the model.
+  for(int neg_i = 0;neg_i < negative_sample_num;++neg_i) {
+    int dim_index = 1;
+    Vec pi;
+  	prob.y[sample_index] = -1;
+  	prob.x[sample_index] = &x_space[feature_index];
+  	
+    pi.setConstant(1 / (global_feature * global_feature));
+    AddPi(pi, feature_index, x_space, dim_index);
+    for (int j = 0; j < l_z_bar[0].cols(); ++j) {
+      pi.setConstant(1 / (local_feature * local_feature));
+      AddPi(pi, feature_index, x_space, dim_index);
+    } 
+    x_space[feature_index++].index = -1;
+    sample_index ++;
+  }  
+
   model* solver = train(&prob, &param);
 
   for (int i = 0; i < g_u->size(); ++i) {
@@ -479,7 +482,6 @@ void VarMGRTM::LearningEta(MatC &g_z_bar, VMatC &l_z_bar, Vec* g_u,
       (*l_u)(i, j) = solver->w[g_u->size() + j * l_u->rows() + i];
     }
   }
-  LOG(INFO) << "a";
   
   free(solver->w);
   free(solver->label);
