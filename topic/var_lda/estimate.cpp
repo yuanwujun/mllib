@@ -6,9 +6,12 @@
 
 using namespace ml;
 
-DEFINE_string(cor_path, "./data/corpus", "");
-DEFINE_int32(topic_num, 10, "");
+DEFINE_string(cor_train, "/data0/data/comment/655/lda_data_2000", "");
+DEFINE_string(cor_test, "/data0/data/comment/655/lda_data_2000", "");
 DEFINE_double(alpha, 0.01, "");
+DEFINE_int32(em_iterate,30,"");
+DEFINE_int32(var_iterate,30,"");
+DEFINE_int32(topic_num, 10, "");
 
 void LdaApp() {
   long t1;
@@ -16,32 +19,32 @@ void LdaApp() {
   seedMT(t1);
 
   float em_converged = 1e-4;
-  int em_max_iter = 20;
+  int em_max_iter = FLAGS_em_iterate;
   int em_estimate_alpha = 1; //1 indicate estimate alpha and 0 use given value
-  int var_max_iter = 30;
+  int var_max_iter = FLAGS_var_iterate;
   double var_converged = 1e-6;
   double initial_alpha = FLAGS_alpha;
-  int n_topic = FLAGS_topic_num;
-  LDA lda;
-  lda.Init(em_converged, em_max_iter, em_estimate_alpha, var_max_iter,
-                         var_converged, initial_alpha, n_topic);
-  Corpus cor;
-  Str data = FLAGS_cor_path;
-  cor.LoadData(data);
+  int topic = FLAGS_topic_num;
+
   Corpus train;
   Corpus test;
-  double p = 0.8;
-  SplitData(cor, p, &train, &test);
-  Str type = "seeded";
+  train.LoadData(FLAGS_cor_train);
+  test.LoadData(FLAGS_cor_test);
+  LOG(INFO) << train.Len()<< " " << test.Len();
+
   LdaModel m;
+  LDA lda;
+  lda.Init(em_converged, em_max_iter, em_estimate_alpha, var_max_iter,
+                         var_converged, initial_alpha, topic);
+  Str type = "seeded";
   lda.RunEM(type, train, test, &m);
 
-  LOG(INFO) << m.alpha;
   VVReal gamma;
   VVVReal phi;
   lda.Infer(test, m, &gamma, &phi);
-  WriteStrToFile(Join(gamma, " ", "\n"), "gamma");
-  WriteStrToFile(Join(phi, " ", "\n", "\n\n"), "phi");
+  WriteStrToFile(Join(gamma, " ", "\n"), "./model/gamma");
+  WriteStrToFile(Join(m.log_prob_w, topic, train.num_terms), "./model/beta");
+  WriteStrToFile(Join(phi, " ", "\n", "\n\n"), "./model/phi");
 }
 
 int main(int argc, char* argv[]) {
