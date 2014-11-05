@@ -65,7 +65,7 @@ double OptAlpha(const LdaSuffStats &ss, LdaModel* m) {
   double* matrix_diag = new double[m->num_topics];
   double* alpha = new double[m->num_topics];
   for(int k=0; k<m->num_topics; ++k) {
-    alpha[k] = 0.01;
+    alpha[k] = 0.00001;
   }
 
   do {
@@ -87,6 +87,10 @@ double OptAlpha(const LdaSuffStats &ss, LdaModel* m) {
       m->alpha[k] = alpha[k];
     }
   } while ((fabs_min(gradient,m->num_topics) > NEWTON_THRESH) && (iter < MAX_ALPHA_ITER));
+
+  delete [] gradient;
+  delete [] matrix_diag;
+  delete [] alpha;
 
   return 0.0;
 }
