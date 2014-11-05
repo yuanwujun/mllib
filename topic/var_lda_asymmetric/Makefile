@@ -1,6 +1,6 @@
 include ../../ThirdLib.mk
 
-PROGRAM=var_lda
+PROGRAM=var_lda_asy
 cc=g++
 
 PUB_DIR=../../lib
