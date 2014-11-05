@@ -33,6 +33,7 @@ class VarMGCTM {
  private:
   double Likelihood(DocC &doc, MGVarC &ss, MGCTMC &m) const;
   double Infer(DocC &doc, MGCTMC &m, MGVar* var) const;
+  double Infer(CorpusC &test, MGCTMC &m);
   double EStep(DocC &doc, MGCTMC &m, MGSS* ss, int iterate) const;
   void MStep(MGSSC &ss, MGCTM* m);
   void InitVar(DocC &doc, MGCTMC &m, Vec* g_diga, Mat* l_diga, MGVar* var)const;

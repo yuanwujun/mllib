@@ -169,13 +169,21 @@ void VarMGCTM::RunEM(CorpusC &test, MGCTM* m) {
     ss.SetZero(m->GTopicNum(), m->LTopicNum1(), m->LTopicNum2(), m->TermNum());
     for (size_t d = 0; d < cor_.Len(); d++) {
       likelihood += EStep(cor_.docs[d], *m, &ss, i);
-      LOG_IF(INFO, d % 10 == 0) << d << " " << likelihood << " "
-                                 << exp(- likelihood / cor_.TWordsNum());
     }
     MStep(ss, m);
     DumpModelParamter(*m,i);
-    LOG(INFO) << likelihood << " " << exp(- likelihood / cor_.TWordsNum());
+    LOG(INFO) <<"likelihood: " <<likelihood <<"perplexity: " <<Infer(test,*m);
   }
+}
+
+double VarMGCTM::Infer(CorpusC &test, MGCTMC &m) {
+  double sum = 0.0;
+  for (size_t d = 0; d < test.Len(); d++) {
+    MGVar var;
+    double likelihood = Infer(test.docs[d], m, &var);
+    sum += likelihood;
+  }
+  return exp(- sum / test.TWordsNum());
 }
 
 double VarMGCTM::Infer(DocC &doc, MGCTMC &m, MGVar* para) const {
@@ -308,7 +316,6 @@ void VarMGCTM::MStep(MGSSC &ss, MGCTM* m) {
     }
   }
 
-  LOG(INFO) << "local over";
   //global
   for (int k = 0; k < m->GTopicNum(); k++) {
     for (int w = 0; w < m->TermNum(); w++) {
@@ -319,7 +326,6 @@ void VarMGCTM::MStep(MGSSC &ss, MGCTM* m) {
       }
     }
   }
-  LOG(INFO) << "global over";
 }
 
 void VarMGCTM::Load(StrC &cor_path) {
