@@ -7,16 +7,16 @@
 
 using namespace ml;
 
-DEFINE_string(cor_train, "/data0/data/comment/655/lda_data_2000", "");
-DEFINE_string(cor_test, "/data0/data/comment/655/lda_data_2000", "");
-DEFINE_int32(local_topic_num, 10, "");
+DEFINE_string(cor_train, "/data0/data/ctm/LDATrainData", "");
+DEFINE_string(cor_test, "/data0/data/ctm/LDATestData", "");
+DEFINE_int32(local_topic_num, 100, "");
 DEFINE_int32(group, 10, "");
-DEFINE_int32(global_topic_num, 10, "");
+DEFINE_int32(global_topic_num, 120, "");
 DEFINE_double(gamma, 1, "");
 DEFINE_double(local_alpha, 0.01, "");
 DEFINE_double(global_alpha, 0.01, "");
 DEFINE_int32(em_iterate, 100, "");
-DEFINE_int32(var_iterate, 100, "");
+DEFINE_int32(var_iterate, 5, "");
 
 void MGCTMApp() {
   ml::Converged converged;

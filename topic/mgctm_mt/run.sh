@@ -7,8 +7,8 @@ Lib="$HOME/ywj/lib/lib"
 export LD_LIBRARY_PATH="$Lib:LD_LIBRARY_PATH"
 cmd="
   ./mgctm_mt
-  --cor_train=/data0/data/comment/mobilePhone/LDATrainData
-  --cor_test=/data0/data/comment/mobilePhone/LDATestData
+  --cor_train=/data0/data/ctm/LDATrainData
+  --cor_test=/data0/data/ctm/LDATestData
   --local_topic_num=10
   --group=10
   --global_topic_num=10
@@ -18,6 +18,9 @@ cmd="
   --em_iterate=100
   --var_iterate=5
   "
+
+#/data0/data/comment/mobilePhone/LDATrainData
+#/data0/data/comment/mobilePhone/LDATestData
 
 gdb="
   gdb ./mgctm_mt
