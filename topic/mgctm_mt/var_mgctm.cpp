@@ -339,29 +339,29 @@ void VarMGCTM::Init(ConvergedC &converged) {
 }
 
 void VarMGCTM::DumpVarParamter(MGVarC& var, int iterate) const{
-  Str eta_file = "model/eta" + ToStr(iterate);
+  Str eta_file = "model/eta_" + ToStr(iterate);
   AppendStrToFile(EVecToStr(var.eta), eta_file);
 
-  Str local_theta_file = "model/ltheta" + ToStr(iterate);
+  Str local_theta_file = "model/ltheta_" + ToStr(iterate);
   for (int col = 0; col < var.l_theta.cols(); ++col) {
     AppendStrToFile(EVecToStr(var.l_theta.col(col)), local_theta_file); 
   }
 
-  Str global_theta_file = "model/gtheta" + ToStr(iterate);
+  Str global_theta_file = "model/gtheta_" + ToStr(iterate);
   AppendStrToFile(EVecToStr(var.g_theta), global_theta_file);
 }
 
 void VarMGCTM::DumpModelParamter(MGCTMC& m,int iterate) const {
-  Str global_beta = "model/gbeta" + ToStr(iterate);
-  for (int col = 0; col < m.g_ln_w.cols(); ++col) {
-    AppendStrToFile(EVecToStr(m.g_ln_w.col(col)), global_beta);
+  Str global_beta = "model/gbeta_" + ToStr(iterate);
+  for (int row = 0; row < m.g_ln_w.rows(); ++row) {
+    AppendStrToFile(EVecToStr(m.g_ln_w.row(row)), global_beta);
   }
 
-  Str local_beta = "model/lbeta" + ToStr(iterate);
+  Str local_beta = "model/lbeta_" + ToStr(iterate) +"_";
   for (size_t group = 0; group < m.l_ln_w.size(); ++group) {
     Str local_beta_group = local_beta + ToStr(group);
-    for (int col = 0; col < m.l_ln_w[group].cols(); ++col) {
-      AppendStrToFile(EVecToStr(m.l_ln_w[group].col(col)), local_beta_group);
+    for (int row = 0; row < m.l_ln_w[group].rows(); ++row) {
+      AppendStrToFile(EVecToStr(m.l_ln_w[group].row(row)), local_beta_group);
     }
   }
 }
