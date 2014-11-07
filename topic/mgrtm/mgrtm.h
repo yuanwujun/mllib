@@ -49,7 +49,7 @@ typedef const MGRTMSuffStats MGRTMSuffStatsC;
 typedef MGRTMSuffStats MGRSS;
 typedef const MGRTMSuffStats MGRSSC;
 
-void MGRTM::Init(int l_size1, int l_size2, int global_k, int v_size,
+void MGRTM::Init(int l_size2, int l_size1, int global_k, int v_size,
                  double ga, double local_alpha, double global_alpha) {
   g_alpha = global_alpha;
   l_alpha.resize(l_size1);
