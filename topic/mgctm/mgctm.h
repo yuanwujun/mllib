@@ -28,22 +28,6 @@ typedef const MGCTM MGCTMC;
 typedef MGCTM MG;
 typedef const MG MGC;
 
-struct MGCTMSuffStats {
-  inline void SetZero(int g_k, int l_k1, int l_k2, int v);
-  inline void InitSS(int g_k, int l_k1, int l_k2, int v);
-  inline void CorpusInit(CorpusC &cor, MGCTMC &m);
-
-  VMat l_topic;
-  Mat l_topic_sum;
-  Mat g_topic;
-  Vec g_topic_sum;
-  Vec pi;
-  double doc_num;
-};
-typedef const MGCTMSuffStats MGCTMSuffStatsC;
-typedef MGCTMSuffStats MGSS;
-typedef const MGCTMSuffStats MGSSC;
-
 void MGCTM::Init(int l_size1, int l_size2, int global_k, int v_size,
                  double ga, double local_alpha, double global_alpha) {
   g_alpha = global_alpha;
@@ -62,8 +46,24 @@ void MGCTM::Init(int l_size1, int l_size2, int global_k, int v_size,
   gamma.setConstant(ga);
 
   pi.resize(l_size1);
-  pi.setZero();
+  //pi.setConstant(1.0 / l_size1);
 }
+
+struct MGCTMSuffStats {
+  inline void SetZero(int g_k, int l_k1, int l_k2, int v);
+  inline void InitSS(int g_k, int l_k1, int l_k2, int v);
+  inline void CorpusInit(CorpusC &cor, MGCTMC &m);
+
+  VMat l_topic;
+  Mat l_topic_sum;
+  Mat g_topic;
+  Vec g_topic_sum;
+  Vec pi;
+  double doc_num;
+};
+typedef const MGCTMSuffStats MGCTMSuffStatsC;
+typedef MGCTMSuffStats MGSS;
+typedef const MGCTMSuffStats MGSSC;
 
 void MGCTMSuffStats::SetZero(int g_k, int l_k1, int l_k2, int v) { 
   g_topic.resize(g_k, v);
@@ -79,16 +79,8 @@ void MGCTMSuffStats::SetZero(int g_k, int l_k1, int l_k2, int v) {
   }
   l_topic_sum.resize(l_k2, l_k1);
   l_topic_sum.setZero();
-}
 
-void MGCTMSuffStats::InitSS(int g_k, int l_k1, int l_k2, int v) { 
-  SetZero(g_k, l_k1, l_k2, v);
-  g_topic.setConstant(1.0 / v);
-  g_topic_sum.setConstant(1);
-  for (size_t i = 0; i < l_topic.size(); i++) {
-    l_topic[i].resize(l_k1, v);
-  }
-  g_topic_sum.setConstant(1);
+  pi.setZero();
 }
 
 void MGCTMSuffStats::CorpusInit(CorpusC &cor, MGCTMC &m) {
@@ -113,7 +105,7 @@ void MGCTMSuffStats::CorpusInit(CorpusC &cor, MGCTMC &m) {
   l_topic_sum.resize(m.LTopicNum2(), m.LTopicNum1());
   for (int j = 0; j < m.LTopicNum1(); j++) {
     l_topic[j].resize(m.LTopicNum2(), m.TermNum());
-    for (int k = 0; k < m.LTopicNum1(); k++) {
+    for (int k = 0; k < l_topic[j].rows(); k++) {
       for (int i = 0; i < 1; i++) {
         const Document &doc =
               cor.docs[static_cast<int>(floor(myrand()*cor.Len()))];
