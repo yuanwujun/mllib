@@ -15,6 +15,8 @@ cmd="
   --gamma=1
   --local_alpha=0.01
   --global_alpha=0.01
+  --em_iterate=100
+  --var_iterate=5
   "
 
 gdb="

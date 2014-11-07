@@ -15,13 +15,15 @@ DEFINE_int32(global_topic_num, 10, "");
 DEFINE_double(gamma, 1, "");
 DEFINE_double(local_alpha, 0.01, "");
 DEFINE_double(global_alpha, 0.01, "");
+DEFINE_int32(em_iterate, 100, "");
+DEFINE_int32(var_iterate, 100, "");
 
 void MGCTMApp() {
   ml::Converged converged;
   converged.em_converged_ = 1e-4;
-  converged.em_max_iter_ = 100;
+  converged.em_max_iter_ = FLAGS_em_iterate;
   converged.var_converged_ = 1e-4;
-  converged.var_max_iter_ = 5;
+  converged.var_max_iter_ = FLAGS_var_iterate;
 
   Corpus train;
   Corpus test;
