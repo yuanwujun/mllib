@@ -70,7 +70,9 @@ void MGRTM::Init(int l_size1, int l_size2, int global_k, int v_size,
   pi.setZero();
   
   g_u.resize(global_k);
+  g_u.setZero();
   l_u.resize(l_size2, l_size1);
+  l_u.setZero();
 }
 
 void MGRTMSuffStats::SetZeroZBar(int g_k, int l_k1, int l_k2, int doc_num) {
@@ -98,6 +100,8 @@ void MGRTMSuffStats::SetZero(int g_k, int l_k1, int l_k2, int v, int doc_num) {
   l_topic_sum.resize(l_k2, l_k1);
   l_topic_sum.setZero();
   SetZeroZBar(g_k, l_k1, l_k2, doc_num);
+
+  pi.setZero();
 }
 
 void MGRTMSuffStats::CorpusInit(CorpusC &cor, MGRTMC &m) {
@@ -122,7 +126,7 @@ void MGRTMSuffStats::CorpusInit(CorpusC &cor, MGRTMC &m) {
   l_topic_sum.resize(m.LTopicNum2(), m.LTopicNum1());
   for (int j = 0; j < m.LTopicNum1(); j++) {
     l_topic[j].resize(m.LTopicNum2(), m.TermNum());
-    for (int k = 0; k < m.LTopicNum1(); k++) {
+    for (int k = 0; k < l_topic[j].rows(); k++) {
       for (int i = 0; i < 1; i++) {
         const Document &doc =
               cor.docs[static_cast<int>(floor(myrand()*cor.Len()))];
