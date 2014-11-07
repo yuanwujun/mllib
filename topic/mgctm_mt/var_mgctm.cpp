@@ -177,6 +177,7 @@ void VarMGCTM::RunEM(CorpusC &test, MGCTM* m) {
 double VarMGCTM::Infer(CorpusC &test, MGCTMC &m) {
   double sum = 0.0;
   VReal likelihoods(test.Len());
+  #pragma omp parallel for
   for (size_t d = 0; d < test.Len(); d++) {
     MGVar var;
     likelihoods[d] = Infer(test.docs[d], m, &var);
