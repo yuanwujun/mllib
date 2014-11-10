@@ -99,7 +99,7 @@ void VarMGCTM::InitVar(DocC &doc, MGCTMC &m, Vec* g_diga, Mat* l_diga,
   var->g_z.setConstant(1.0 / m.GTopicNum());
 
   //l_theta
-  var->l_theta.resize(m.LTopicNum2(), m.LTopicNum2());
+  var->l_theta.resize(m.LTopicNum2(), m.LTopicNum1());
   a = m.l_alpha[0] + doc.TLen() / static_cast<double>(m.LTopicNum2());
   var->l_theta.setConstant(a);
   l_diga->resize(m.LTopicNum2(), m.LTopicNum1());

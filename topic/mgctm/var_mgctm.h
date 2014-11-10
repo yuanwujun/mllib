@@ -19,9 +19,6 @@ struct MGVar {
 
   Vec delta;
   Vec omega;
-
-  void ReSet();
-  void Init();
 };
 typedef const MGVar MGVarC;
 
