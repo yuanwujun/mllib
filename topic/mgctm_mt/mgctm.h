@@ -51,7 +51,6 @@ void MGCTM::Init(int l_size2, int l_size1, int global_k, int v_size,
 
 struct MGCTMSuffStats {
   inline void SetZero(int g_k, int l_k1, int l_k2, int v);
-  inline void InitSS(int g_k, int l_k1, int l_k2, int v);
   inline void CorpusInit(CorpusC &cor, MGCTMC &m);
 
   VMat l_topic;
