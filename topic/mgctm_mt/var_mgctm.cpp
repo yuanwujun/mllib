@@ -138,6 +138,7 @@ void VarMGCTM::RunEM(CorpusC &test, MGCTM* m) {
     }
 
     double likelihood = 0;
+    VStr etas(cor_.Len());
     ss.SetZero(m->GTopicNum(), m->LTopicNum1(), m->LTopicNum2(), m->TermNum());
     for (size_t d = 0; d < cor_.Len(); d++) {
       DocC &doc = cor_.docs[d];
@@ -162,13 +163,14 @@ void VarMGCTM::RunEM(CorpusC &test, MGCTM* m) {
         ss.pi[j] += vars[d].eta[j];
       }
 
-      DumpVarParamter(vars[d],i);
+      etas[d] = EVecToStr(vars[d].eta);
       likelihood += likelihoods[d];
     }
 
     MStep(ss, m);
-    DumpModelParamter(*m,i);
+
     if (i % 10 == 0) {
+      OutputFile(*m,Join(etas,"\n"),i);
       LOG(INFO) <<"likelihood: " <<likelihood <<"perplexity: " <<Infer(test,*m);
     }
   }
@@ -303,6 +305,7 @@ double VarMGCTM::Infer(DocC &doc, MGCTMC &m, MGVar* para) const {
 
 void VarMGCTM::MStep(MGSSC &ss, MGCTM* m) {
   //local
+  #pragma omp parallel for
   for (int j = 0; j < m->LTopicNum1(); j++) {
     //m->pi[j] = ss.pi[j] / ss.doc_num;
     m->pi[j] = ss.pi[j] / ss.pi.sum();
@@ -319,6 +322,7 @@ void VarMGCTM::MStep(MGSSC &ss, MGCTM* m) {
   }
 
   //global
+  #pragma omp parallel for
   for (int k = 0; k < m->GTopicNum(); k++) {
     for (int w = 0; w < m->TermNum(); w++) {
       if (ss.g_topic(k, w) > 0) {
@@ -338,10 +342,8 @@ void VarMGCTM::Init(ConvergedC &converged) {
   converged_ = converged;
 }
 
-void VarMGCTM::DumpVarParamter(MGVarC& var, int iterate) const{
-  Str eta_file = "/data0/data/ctm/model/eta_" + ToStr(iterate);
-  AppendStrToFile(EVecToStr(var.eta), eta_file);
-
+void VarMGCTM::OutputFile(MGCTMC& m,StrC &eta,int iterate) const {
+/*
   Str local_theta_file = "model/ltheta_" + ToStr(iterate);
   for (int col = 0; col < var.l_theta.cols(); ++col) {
     AppendStrToFile(EVecToStr(var.l_theta.col(col)), local_theta_file); 
@@ -349,20 +351,26 @@ void VarMGCTM::DumpVarParamter(MGVarC& var, int iterate) const{
 
   Str global_theta_file = "model/gtheta_" + ToStr(iterate);
   AppendStrToFile(EVecToStr(var.g_theta), global_theta_file);
-}
+*/
 
-void VarMGCTM::DumpModelParamter(MGCTMC& m,int iterate) const {
-  Str global_beta = "/data0/data/ctm/model/gbeta_" + ToStr(iterate);
+  Str eta_file = "/data0/data/ctm/model/eta_" + ToStr(iterate);
+  WriteStrToFile(eta,eta_file);
+
+  VStr gLnBeta(m.GTopicNum());
   for (int row = 0; row < m.g_ln_w.rows(); ++row) {
-    AppendStrToFile(EVecToStr(m.g_ln_w.row(row)), global_beta);
+    gLnBeta[row] = EVecToStr(m.g_ln_w.row(row)); 
   }
+  Str global_beta = "/data0/data/ctm/model/gbeta_" + ToStr(iterate);
+  WriteStrToFile(Join(gLnBeta,"\n"),global_beta);
 
   Str local_beta = "/data0/data/ctm/model/lbeta_" + ToStr(iterate) +"_";
   for (size_t group = 0; group < m.l_ln_w.size(); ++group) {
-    Str local_beta_group = local_beta + ToStr(group);
+    VStr lLnBeta(m.LTopicNum2());
     for (int row = 0; row < m.l_ln_w[group].rows(); ++row) {
-      AppendStrToFile(EVecToStr(m.l_ln_w[group].row(row)), local_beta_group);
+      lLnBeta[row] = EVecToStr(m.l_ln_w[group].row(row));
     }
+    Str local_beta_group = local_beta + ToStr(group);
+    WriteStrToFile(Join(lLnBeta,"\n"),local_beta_group);
   }
 }
 } // namespace ml 
