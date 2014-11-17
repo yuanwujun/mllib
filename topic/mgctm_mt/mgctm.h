@@ -85,7 +85,9 @@ void MGCTMSuffStats::SetZero(int g_k, int l_k1, int l_k2, int v) {
 void MGCTMSuffStats::CorpusInit(CorpusC &cor, MGCTMC &m) {
   doc_num = cor.Len();
   g_topic.resize(m.GTopicNum(), m.TermNum());
+  g_topic.setZero();
   g_topic_sum.resize(m.GTopicNum());
+  g_topic_sum.setZero();
   for (int k = 0; k < m.GTopicNum(); k++) {
     for (int i = 0; i < 1; i++) {
       const Document &doc = 
@@ -102,8 +104,10 @@ void MGCTMSuffStats::CorpusInit(CorpusC &cor, MGCTMC &m) {
 
   l_topic.resize(m.LTopicNum1());
   l_topic_sum.resize(m.LTopicNum2(), m.LTopicNum1());
+  l_topic_sum.setZero();
   for (int j = 0; j < m.LTopicNum1(); j++) {
     l_topic[j].resize(m.LTopicNum2(), m.TermNum());
+    l_topic[j].setZero();
     for (int k = 0; k < l_topic[j].rows(); k++) {
       for (int i = 0; i < 1; i++) {
         const Document &doc =

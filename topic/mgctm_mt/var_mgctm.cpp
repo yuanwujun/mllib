@@ -67,7 +67,7 @@ double VarMGCTM::Likelihood(DocC &doc, MGVarC &var, MGCTMC &m) const {
   for (size_t n = 0; n < doc.ULen(); n++) {
     for (int k = 0; k < m.GTopicNum(); k++) {
       likelihood += doc.Count(n) * (1 - var.delta[n])*var.g_z(k, n)*
-                    m.g_ln_w(k, doc.Word(n));
+                                                      m.g_ln_w(k, doc.Word(n));
     }
   }
 
@@ -85,14 +85,10 @@ double VarMGCTM::Likelihood(DocC &doc, MGVarC &var, MGCTMC &m) const {
 /****
 phi: topic*doc_size
 ****/
-void VarMGCTM::InitVar(DocC &doc, MGCTMC &m, Vec* g_diga, Mat* l_diga,
-                                             MGVar* var) const {
+void VarMGCTM::InitVar(DocC &doc, MGCTMC &m, MGVar* var) const {
   //g_theta
   var->g_theta.resize(m.GTopicNum());
-  double a = m.g_alpha + doc.TLen() / static_cast<double>(m.GTopicNum());
-  var->g_theta.setConstant(a);
-  g_diga->resize(m.GTopicNum());
-  g_diga->setConstant(DiGamma(a));
+  var->g_theta.setConstant(m.g_alpha + doc.TLen()/(double)m.GTopicNum());
 
   //g_z
   var->g_z.resize(m.GTopicNum(), doc.ULen());
@@ -100,10 +96,8 @@ void VarMGCTM::InitVar(DocC &doc, MGCTMC &m, Vec* g_diga, Mat* l_diga,
 
   //l_theta
   var->l_theta.resize(m.LTopicNum2(), m.LTopicNum1());
-  a = m.l_alpha[0] + doc.TLen() / static_cast<double>(m.LTopicNum2());
-  var->l_theta.setConstant(a);
-  l_diga->resize(m.LTopicNum2(), m.LTopicNum1());
-  l_diga->setConstant(DiGamma(a));
+  var->l_theta.setConstant(m.l_alpha[0] +
+                 doc.TLen()/(double)m.LTopicNum2());
   
   //l_z
   var->l_z.resize(m.LTopicNum1());
@@ -112,23 +106,27 @@ void VarMGCTM::InitVar(DocC &doc, MGCTMC &m, Vec* g_diga, Mat* l_diga,
     var->l_z[j].setConstant(1.0 / m.LTopicNum2());
   }
 
+  double frac = m.GTopicNum() / (double)(m.LTopicNum1()*m.LTopicNum2() + m.GTopicNum());
+
   //omega
   var->omega.resize(2); 
-  var->omega.setZero(); 
+  var->omega[0] = m.gamma[0] + doc.TLen()*frac;
+  var->omega[1] = m.gamma[1] + doc.TLen()*(1 - frac);
 
   //delta
   var->delta.resize(doc.ULen()); 
-  var->delta.setZero(); 
+  var->delta.setConstant(1 - frac); 
   
   //eta
   var->eta.resize(m.LTopicNum1());
-  var->eta.setZero();
+  var->eta.setConstant(1.0 / m.LTopicNum1());
 }
 
 void VarMGCTM::RunEM(CorpusC &test, MGCTM* m) {
   MGSS ss;
   ss.CorpusInit(cor_, *m);
   MStep(ss, m);
+  LOG(INFO) << m->pi.transpose();
   for (int i = 0; i < converged_.em_max_iter_; i++) {
     std::vector<MGVar> vars(cor_.Len());
     VReal likelihoods(cor_.Len());
@@ -144,17 +142,17 @@ void VarMGCTM::RunEM(CorpusC &test, MGCTM* m) {
       DocC &doc = cor_.docs[d];
       for (size_t n = 0; n < doc.ULen(); n++) {
         for (int k = 0; k < m->GTopicNum(); k++) {
-          ss.g_topic(k, doc.Word(n)) += doc.Count(n) * vars[d].g_z(k, n) *
+          ss.g_topic(k, doc.Word(n)) += doc.Count(n)*vars[d].g_z(k, n)*
                                      (1 - vars[d].delta[n]);
-          ss.g_topic_sum[k] += doc.Count(n) * vars[d].g_z(k, n) * (1 - vars[d].delta[n]);
+          ss.g_topic_sum[k] += doc.Count(n)*vars[d].g_z(k, n)*(1 - vars[d].delta[n]);
         }
       }
       for (int j = 0; j < m->LTopicNum1(); j++) {
         for (size_t n = 0; n < doc.ULen(); n++) {
           for (int k = 0; k < m->LTopicNum2(); k++) {
-            ss.l_topic[j](k, doc.Word(n)) += doc.Count(n) * vars[d].l_z[j](k, n)
-                                * vars[d].delta[n] * vars[d].eta[j];
-            ss.l_topic_sum(k, j) += doc.Count(n) * vars[d].l_z[j](k, n) *
+            ss.l_topic[j](k, doc.Word(n)) += doc.Count(n)*vars[d].l_z[j](k, n)
+                                *vars[d].delta[n]*vars[d].eta[j];
+            ss.l_topic_sum(k, j) += doc.Count(n)*vars[d].l_z[j](k, n) *
                                   vars[d].delta[n] * vars[d].eta[j];
           }
         }
@@ -166,13 +164,10 @@ void VarMGCTM::RunEM(CorpusC &test, MGCTM* m) {
       etas[d] = EVecToStr(vars[d].eta);
       likelihood += likelihoods[d];
     }
-
     MStep(ss, m);
-
-    if (i % 10 == 0) {
-      OutputFile(*m,Join(etas,"\n"),i);
-      LOG(INFO) <<"likelihood: " <<likelihood <<"perplexity: " <<Infer(test,*m);
-    }
+    LOG(INFO) << m->pi.transpose();
+    OutputFile(*m, Join(etas,"\n"), i);
+//    LOG(INFO) <<"perplexity: " <<Infer(test,*m);
   }
 }
 
@@ -192,11 +187,8 @@ double VarMGCTM::Infer(CorpusC &test, MGCTMC &m) {
 
 double VarMGCTM::Infer(DocC &doc, MGCTMC &m, MGVar* para) const {
   double c = 1;
-  Vec g_diga;
-  Mat l_diga;
-  InitVar(doc, m, &g_diga, &l_diga, para);
+  InitVar(doc, m, para);
   MGVar &p = *para;
-  Vec vec(m.GTopicNum());  //allociate one time
   for(int it = 1; (c > converged_.var_converged_) && (it < 
                        converged_.var_max_iter_); ++it) {
     //indicate variable eta
@@ -343,16 +335,6 @@ void VarMGCTM::Init(ConvergedC &converged) {
 }
 
 void VarMGCTM::OutputFile(MGCTMC& m,StrC &eta,int iterate) const {
-/*
-  Str local_theta_file = "model/ltheta_" + ToStr(iterate);
-  for (int col = 0; col < var.l_theta.cols(); ++col) {
-    AppendStrToFile(EVecToStr(var.l_theta.col(col)), local_theta_file); 
-  }
-
-  Str global_theta_file = "model/gtheta_" + ToStr(iterate);
-  AppendStrToFile(EVecToStr(var.g_theta), global_theta_file);
-*/
-
   Str eta_file = "/data0/data/ctm/model/eta_" + ToStr(iterate);
   WriteStrToFile(eta,eta_file);
 
