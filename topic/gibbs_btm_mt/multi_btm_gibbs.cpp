@@ -12,7 +12,7 @@
 
 using namespace std;
 
-int topic = 100;
+int topic = 300;
 double alpha = 0.01;
 double beta = 0.05;
 
@@ -94,7 +94,7 @@ void inferenceModel(corpus &co, int d, processor &td) {
         double u = (static_cast<double>(random()) / RAND_MAX) * prob[topic - 1];
         int newTopic;
         for (newTopic = 0; newTopic < topic; newTopic++){
-            if (u < prob[newTopic])
+            if (u <= prob[newTopic])
                 break;
         }
 
@@ -163,7 +163,13 @@ void runBTM(corpus &co,int iter) {
 
         delete []td;
 
-        printf("%d\n",i);
+        if ((i + 1) % 10 == 0) {
+            char phi[100] = {0};
+            char theta[100] = {0};
+            sprintf(phi,"/data0/data/btm/phi%d",i);
+            sprintf(theta,"/data0/data/btm/theta%d",i);
+            estimate(co, phi, theta);
+        }
     }
 }
 
@@ -172,7 +178,9 @@ int main(int argc, char* argv[]) {
     const char *doc = "/data0/data/btm/corpus";
     const char *phi = "./phi";
     const char *theta = "./theta";
-    int iter = 400;
+    int iter = 500;
+
+    printf("begin start\n");
 
     struct corpus co;
     load_corpus(biterm,doc,co);
