@@ -1,5 +1,5 @@
 // Copyright 2014 yuanwujun. All Rights Reserved.
-// Author: real.yuanwj@gmail.com
+// Author: real.yuanwj@gmail.com (WuJun Yuan)
 
 #include <stdio.h>
 

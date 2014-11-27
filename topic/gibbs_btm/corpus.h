@@ -1,5 +1,5 @@
 // Copyright 2014 yuanwujun. All Rights Reserved.
-// Author: real.yuanwj@gmail.com
+// Author: real.yuanwj@gmail.com (WuJun Yuan)
 
 #ifndef _CORPUS_H_
 #define _CORPUS_H_
