@@ -1,5 +1,5 @@
-// Copyright 2013 lijiankou. All Rights Reserved.
-// Author: lijk_start@163.com (Jiankou Li)
+// Copyright 2014 yuanwujun. All Rights Reserved.
+// Author: real.yuanwj@gmail.com (WuJun Yuan)
 
 #include <cstdio>
 #include <cstdlib>

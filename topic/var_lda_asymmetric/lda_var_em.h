@@ -1,5 +1,5 @@
-// copyright 2013 lijiankou. all rights reserved.
-// Author: lijk_start@163.com (Jiankou Li)
+// Copyright 2014 yuanwujun. All Rights Reserved.
+// Author: real.yuanwj@gmail.com (WuJun Yuan)
 #ifndef ML_LDA_VAR_EM_H
 #define ML_LDA_VAR_EM_H
 #include "base_head.h"

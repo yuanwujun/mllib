@@ -1,3 +1,5 @@
+// Copyright 2014 yuanwujun. All Rights Reserved.
+// Author: real.yuanwj@gmail.com (WuJun Yuan)
 #include "lda_model.h"
 
 #include "array_numeric_operator.h"
