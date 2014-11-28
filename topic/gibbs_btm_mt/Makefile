@@ -1,5 +1,3 @@
-include ../../ThirdLib.mk
-
 PROGRAM=btm
 cc=g++
 
